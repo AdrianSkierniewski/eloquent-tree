@@ -1,0 +1,23 @@
+{
+    "name": "gzero/eloquent-tree",
+    "description": "",
+    "authors": [
+        {
+            "name": "Adrian Skierniewski",
+            "email": "adrian.skierniewski@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "illuminate/support": "4.1.*"
+    },
+    "autoload": {
+        "classmap": [
+            "src/migrations"
+        ],
+        "psr-0": {
+            "Gzero\\EloquentTree\\": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
