@@ -17,9 +17,9 @@ class CreateTreeTable extends Migration {
             'trees',
             function (Blueprint $table) {
                 $table->increments('id');
-                $table->string('path', 255);
+                $table->string('path', 255)->nullable();
                 $table->integer('parent_id')->unsigned()->nullable();
-                $table->integer('level');
+                $table->integer('level')->default(0);
                 $table->timestamps();
                 $table->index('path');
                 $table->foreign('parent_id')->references('id')->on('trees')->on_delete('CASCADE');

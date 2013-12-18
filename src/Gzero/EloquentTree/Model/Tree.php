@@ -4,11 +4,17 @@
 class Tree extends \Illuminate\Database\Eloquent\Model {
 
     /**
+     * Parent object
+     *
+     * @var static
+     */
+    protected $_parent;
+    /**
      * Array for children elements
      *
      * @var array
      */
-    public $children = array();
+    protected $_children = array();
     /**
      * Database mapping tree fields
      *
@@ -19,6 +25,15 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         'parent' => 'parent_id',
         'level'  => 'level'
     );
+
+    /**
+     * ONLY FOR TESTS!
+     * Metod resets static::$booted
+     */
+    public static function __resetBootedStaticProperty()
+    {
+        static::$booted = array();
+    }
 
     /**
      * Get tree column for actual model
@@ -41,18 +56,47 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         static::observe(new Observer());
     }
 
-//    /**
-//     * Funkcja zwraca obiekt rodzica
-//     *
-//     * @TODO Trzeba dodać Lazy loading
-//     * @return Tree_Base
-//     */
-//    public function getParent()
-//    {
-//        if ($this->{static::$_tree_cols['parent']}) {
-//            return static::where(static::$key, '=', $this->{static::$_tree_cols['parent']})->first();
-//        }
-//    }
+    public function setAsRoot()
+    {
+        $this->_handleNewNodes();
+        $this->{$this->getTreeColumn('path')}   = $this->{$this->getKeyName()} . '/';
+        $this->{$this->getTreeColumn('parent')} = NULL;
+        $this->{$this->getTreeColumn('level')}  = 0;
+        $this->save();
+        return $this;
+    }
+
+    public function setChildOf(Tree $parent)
+    {
+        $this->_handleNewNodes();
+        $this->{$this->getTreeColumn('path')}   = $parent->{$this->getTreeColumn('path')} . $this->{$this->getKeyName()} . '/';
+        $this->{$this->getTreeColumn('parent')} = $parent->{$this->getKeyName()};
+        $this->{$this->getTreeColumn('level')}  = $parent->{$this->getTreeColumn('level')} + 1;
+        $this->save();
+        return $this;
+    }
+
+    public function setSiblingOf(Tree $sibling)
+    {
+        $this->{$this->getTreeColumn('path')}   =
+            preg_replace('//d\/$/', '', $sibling->{$this->getTreeColumn('path')}) . $this->{$this->getKeyName()} . '/';
+        $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
+        $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
+        $this->save();
+        return $this;
+    }
+
+    public function getParent()
+    {
+        if ($this->{$this->getTreeColumn('parent')}) {
+            if (!$this->_parent) {
+                return $this->_parent = static::where(static::$key, '=', $this->{static::$_tree_cols['parent']})->first();
+            }
+            return $this->_parent;
+        }
+    }
+
+
 //
 //    /**
 //     * Funkcja zwraca zbudowane zapytanie, który wciągnie dzieci danego obiektu
@@ -108,21 +152,15 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 //            ->order_by(static::$_tree_cols['level'], 'ASC');
 //    }
 //
-//    /**
-//     * Funkcja ustawia nasz obiektu jako potomka obiektu $parent. Po czym zapisuje go do bazy
-//     *
-//     * @param \Tree_Base $parent Obiekt rodzica, dla którego dodajemy dziecko
-//     *
-//     * @return static
-//     */
-//    public function setChildOf(\Tree_Base $parent)
-//    {
-//        $this->{static::$_tree_cols['parent']} = $parent->{static::$key};
-//        $this->{static::$_tree_cols['level']}  = $parent->{static::$_tree_cols['level']} + 1;
-//        $this->__pathExistSetter($parent->{static::$_tree_cols['path']}); // Ścieżka rodzica
-//        $this->save();
-//        return $this;
-//    }
+    /**
+     * Funkcja ustawia nasz obiektu jako potomka obiektu $parent. Po czym zapisuje go do bazy
+     *
+     * @param Tree $parent Obiekt rodzica, dla którego dodajemy dziecko
+     *
+     * @return static
+     */
+
+
 //
 //    /**
 //     * Funkcja ustawia nasz obiektu jako rodzeństwo dla obiektu obiektu $sibling. Po czym zapisuje go do bazy
@@ -131,28 +169,14 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 //     *
 //     * @return static
 //     */
-//    public function setSiblingOf(\Tree_Base $sibling)
-//    {
-//        $this->{static::$_tree_cols['parent']} = $sibling->{static::$_tree_cols['parent']};
-//        $this->{static::$_tree_cols['level']}  = $sibling->{static::$_tree_cols['level']};
-//        $this->__pathExistSetter(substr($sibling->{static::$_tree_cols['path']}, 0, -2)); // Ścieżka rodzica
-//        $this->save();
-//        return $this;
-//    }
+
 //
 //    /**
 //     * Funkcja ustawia nasz obiekt jako root i zapisuje do bazy
 //     *
 //     * @return static
 //     */
-//    public function setAsRoot()
-//    {
-//        $this->{static::$_tree_cols['parent']} = NULL;
-//        $this->{static::$_tree_cols['level']}  = 0;
-//        $this->__pathExistSetter(''); // Ścieżka rodzica
-//        $this->save();
-//        return $this;
-//    }
+
 //
 //    /**
 //     * Funkcja sprawdza czy dany węzeł jest root`em
@@ -187,7 +211,13 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 //    //-----------------------------------------------------------------------------------------------
 //    // START                         PROTECTED/PRIVATE
 //    //-----------------------------------------------------------------------------------------------
-//
+
+    protected function _handleNewNodes()
+    {
+        if (!$this->exists) {
+            $this->save();
+        }
+    }
 //    /**
 //     * Funkcja odtwarza z rekordów z bazy strukturę drzewa po stronie PHP
 //     *

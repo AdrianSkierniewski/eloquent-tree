@@ -19,6 +19,12 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->prepareForTests();
     }
 
+    public function tearDown()
+    {
+        parent::tearDown();
+        Tree::__resetBootedStaticProperty();
+    }
+
     /**
      * Creates the application.
      *
@@ -44,12 +50,26 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     /**
      * New node saved as root
      */
-    public function testCreateNewNode()
+    public function testCreateNewNodeAsRoot()
     {
-        $node = new Tree();
-        $this->assertNotEmpty($node->save());
-        $this->assertEquals($node->id, 1);
-        $this->assertEquals($node->path, $node->id . '/');
-        $this->assertEquals($node->level, 0);
+        $root = new Tree();
+        $this->assertNotEmpty($root->setAsRoot());
+        $this->assertEquals($root->id, 1);
+        $this->assertEquals($root->path, $root->id . '/');
+        $this->assertEquals($root->level, 0);
+        $root2 = new Tree();
+        $this->assertNotEmpty($root2->save()); // Standard save - we expect root node
+        $this->assertEquals($root2->id, 2);
+        $this->assertEquals($root2->path, $root2->id . '/');
+        $this->assertEquals($root2->level, 0);
+    }
+
+    public function testCreateNewNodeAsChildren()
+    {
+        $root  = (new Tree())->setAsRoot();
+        $child = (new Tree())->setChildOf($root);
+        $this->assertEquals($root->path . $child->id . '/', $child->path, 'Wrong children path!');
+        $this->assertEquals($root->level + 1, $child->level, 'Wrong children level!');
+        $this->assertEquals($root->id, $child->parent_id, 'Wrong children parent!');
     }
 }

@@ -1,7 +1,5 @@
 <?php namespace Gzero\EloquentTree;
 
-use Gzero\EloquentTree\Model\Observer;
-use Gzero\EloquentTree\Model\Tree;
 use Illuminate\Support\ServiceProvider;
 
 class EloquentTreeServiceProvider extends ServiceProvider {
