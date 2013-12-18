@@ -56,6 +56,11 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         static::observe(new Observer());
     }
 
+    /**
+     * Set node as root node
+     *
+     * @return $this
+     */
     public function setAsRoot()
     {
         $this->_handleNewNodes();
@@ -66,6 +71,13 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         return $this;
     }
 
+    /**
+     * Set node as child of $parent node
+     *
+     * @param Tree $parent
+     *
+     * @return $this
+     */
     public function setChildOf(Tree $parent)
     {
         $this->_handleNewNodes();
@@ -76,6 +88,13 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         return $this;
     }
 
+    /**
+     * Set node as sibling of $sibling node
+     *
+     * @param Tree $sibling
+     *
+     * @return $this
+     */
     public function setSiblingOf(Tree $sibling)
     {
         $this->_handleNewNodes();
@@ -87,14 +106,29 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         return $this;
     }
 
+    /**
+     * Check if node is root
+     *
+     * @return bool
+     */
+    public function isRoot()
+    {
+        return (empty($this->{$this->getTreeColumn('parent')})) ? TRUE : FALSE;
+    }
+
+    /**
+     * @return static
+     */
     public function getParent()
     {
         if ($this->{$this->getTreeColumn('parent')}) {
             if (!$this->_parent) {
-                return $this->_parent = static::where(static::$key, '=', $this->{static::$_tree_cols['parent']})->first();
+                return $this->_parent = static::where($this->getKeyName(), '=', $this->{$this->getTreeColumn('parent')})
+                    ->first();
             }
             return $this->_parent;
         }
+        return NULL;
     }
 
 
@@ -153,41 +187,8 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 //            ->order_by(static::$_tree_cols['level'], 'ASC');
 //    }
 //
-    /**
-     * Funkcja ustawia nasz obiektu jako potomka obiektu $parent. Po czym zapisuje go do bazy
-     *
-     * @param Tree $parent Obiekt rodzica, dla którego dodajemy dziecko
-     *
-     * @return static
-     */
-
-
 //
-//    /**
-//     * Funkcja ustawia nasz obiektu jako rodzeństwo dla obiektu obiektu $sibling. Po czym zapisuje go do bazy
-//     *
-//     * @param \Tree_Base $sibling Obiekt dla którego dodajemy rodzeństwo
-//     *
-//     * @return static
-//     */
 
-//
-//    /**
-//     * Funkcja ustawia nasz obiekt jako root i zapisuje do bazy
-//     *
-//     * @return static
-//     */
-
-//
-//    /**
-//     * Funkcja sprawdza czy dany węzeł jest root`em
-//     *
-//     * @return bool
-//     */
-//    public function isRoot()
-//    {
-//        return (empty($this->{static::$_tree_cols['parent']})) ? TRUE : FALSE;
-//    }
 //
 //    /**
 //     * Funkcja zwraca wszystkie elementy danego drzewa posortowane po wadze. Ze zbioru takich elementów można stworzyć drzewo
