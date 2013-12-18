@@ -22,8 +22,7 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     public function tearDown()
     {
         parent::tearDown();
-//        Tree::__resetBootedStaticProperty();
-        $this->app = NULL;
+        Tree::__resetBootedStaticProperty();
     }
 
     /**
@@ -115,7 +114,7 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertNotEmpty($node->getParent(), 'Node expects to have a parent');
         $this->assertEquals($collection, $root->getChildren()->get()->toArray(), 'Root expects to have children');
 
-        // dziecko staje się root'em
+        // children becomes root node
         $newRoot = $node->setAsRoot();
         $this->assertTrue($newRoot->isRoot(), 'Assert root node');
         $this->assertEmpty($newRoot->getParent(), 'Expected no parent');
