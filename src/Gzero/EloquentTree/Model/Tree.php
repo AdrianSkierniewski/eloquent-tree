@@ -42,7 +42,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      *
      * @return null
      */
-    public function getTreeColumn($name)
+    public static function getTreeColumn($name)
     {
         if (!empty(static::$_tree_cols[$name])) {
             return static::$_tree_cols[$name];
@@ -163,40 +163,64 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     public function getAncestors()
     {
-        return static::whereIn($this->getKeyName(), explode('/', $this->{$this->getTreeColumn('path')}))
+        return static::whereIn($this->getKeyName(), $this->_extractPath())
             ->where($this->getKeyName(), '!=', $this->{$this->getKeyName()})
             ->orderBy($this->getTreeColumn('level'), 'ASC');
     }
 
-//    /**
-//     * Funkcja zwraca wszystkie elementy danego drzewa posortowane po wadze. Ze zbioru takich elementów można stworzyć drzewo
-//     * za pomocą metody
-//     *
-//     * @param Int    $root_id   Id węzła dla którego chcemy zbudować drzewo
-//     * @param String $lang_code Kod języka
-//     *
-//     * @return mixed
-//     */
-//    public static function fetchTree($root_id, $lang_code)
-//    {
-//        return static::withLangs($lang_code)
-//            ->where( // Root
-//                static::$_tree_cols['path'],
-//                'LIKE',
-//                "$root_id/%"
-//            )
-//            ->order_by(static::$_tree_cols['level'], 'ASC');
-//    }
-//
+    /**
+     * Get root for this node
+     *
+     * @return $this
+     */
+    public function getRoot()
+    {
+        if ($this->isRoot()) {
+            return $this;
+        } else {
+            $extractedPath = $this->_extractPath();
+            $root_id       = array_shift($extractedPath);
+            return static::where($this->getKeyName(), '=', $root_id)->first();
+        }
+    }
+
+    /**
+     * Get all nodes in tree (with root node)
+     *
+     * @param int $root_id Root node id
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function fetchTree($root_id)
+    {
+        return static::where(static::getTreeColumn('path'), 'LIKE', "$root_id/%")
+            ->orderBy(static::getTreeColumn('level'), 'ASC');
+    }
+
 //    //-----------------------------------------------------------------------------------------------
 //    // START                         PROTECTED/PRIVATE
 //    //-----------------------------------------------------------------------------------------------
 
+    /**
+     * Creating node if not exist
+     */
     protected function _handleNewNodes()
     {
         if (!$this->exists) {
             $this->save();
         }
+    }
+
+    /**
+     * Extract path to array
+     *
+     * @return array
+     */
+    protected function _extractPath()
+    {
+        $path = explode('/', $this->{$this->getTreeColumn('path')});
+        array_pop($path); // Remove last empty element
+        return $path;
     }
 //    /**
 //     * Funkcja odtwarza z rekordów z bazy strukturę drzewa po stronie PHP

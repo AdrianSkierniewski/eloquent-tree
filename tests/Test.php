@@ -164,6 +164,35 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     }
 
     /**
+     * Get root for specific node
+     */
+    public function testGetRootNode()
+    {
+        extract($this->_createSampleTree());
+        $this->assertEquals($root->toArray(), $child1_1_1->getRoot()->toArray(), 'Expected root node');
+    }
+
+    /**
+     * Fetch all nodes form tree
+     */
+    public function testFetchTree()
+    {
+        extract($this->_createSampleTree());
+        $this->assertEquals( // Nodes same as returned from fetchTree()
+            array(
+                $root->toArray(),
+                $child1->toArray(),
+                $child2->toArray(),
+                $child3->toArray(),
+                $child1_1->toArray(),
+                $child1_1_1->toArray(),
+            ),
+            Tree::fetchTree($root->id)->get()->toArray(),
+            'Expected all nodes'
+        );
+    }
+
+    /**
      * Helper function
      *
      * @return array
