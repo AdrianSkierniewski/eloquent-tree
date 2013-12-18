@@ -78,8 +78,9 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 
     public function setSiblingOf(Tree $sibling)
     {
+        $this->_handleNewNodes();
         $this->{$this->getTreeColumn('path')}   =
-            preg_replace('//d\/$/', '', $sibling->{$this->getTreeColumn('path')}) . $this->{$this->getKeyName()} . '/';
+            preg_replace('/\d\/$/', '', $sibling->{$this->getTreeColumn('path')}) . $this->{$this->getKeyName()} . '/';
         $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
         $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
         $this->save();

@@ -64,6 +64,9 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals($root2->level, 0);
     }
 
+    /**
+     * New node saved as child
+     */
     public function testCreateNewNodeAsChildren()
     {
         $root  = (new Tree())->setAsRoot();
@@ -71,5 +74,17 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals($root->path . $child->id . '/', $child->path, 'Wrong children path!');
         $this->assertEquals($root->level + 1, $child->level, 'Wrong children level!');
         $this->assertEquals($root->id, $child->parent_id, 'Wrong children parent!');
+    }
+
+    /**
+     * New node saved as sibling
+     */
+    public function testCreateNewNodeAsSibling()
+    {
+        $sibling = (new Tree())->setAsRoot();
+        $node    = (new Tree())->setSiblingOf($sibling);
+        $this->assertEquals($node->id . '/', $node->path, 'Wrong sibling path!');
+        $this->assertEquals($sibling->level, $node->level, 'Wrong sibling level!');
+        $this->assertEquals($sibling->parent_id, $node->parent_id, 'Wrong sibling parent!');
     }
 }
