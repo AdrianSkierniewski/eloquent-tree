@@ -92,6 +92,9 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals($sibling->parent_id, $node->parent_id, 'Wrong sibling parent!');
     }
 
+    /**
+     * Change existing node to root node
+     */
     public function testChangeNodeToRoot()
     {
         $root = with(new Tree())->setAsRoot();
@@ -104,6 +107,9 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals($node->parent_id, NULL, 'New root parent_id expected to be NULL');
     }
 
+    /**
+     * Get all children for specific node
+     */
     public function testGetChildrenForNode()
     {
         $root         = with(new Tree())->setAsRoot();
@@ -124,16 +130,53 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals(array(), $newRoot->getChildren()->get()->toArray(), 'New Root expects to have no children');
     }
 
+    /**
+     * Get all ancestors for specific node
+     */
+    public function testGetAncestorsForNode()
+    {
+        extract($this->_createSampleTree());
+        $this->assertEquals($child1_1->toArray(), $child1_1_1->getParent()->toArray(), 'Node expects to have a specific parent');
+        $this->assertEquals( // Ancestors same as returned from getAncestors()
+            array(
+                $root->toArray(),
+                $child1->toArray(),
+                $child1_1->toArray()
+            ),
+            $child1_1_1->getAncestors()->get()->toArray()
+        );
+    }
+
+    /**
+     * Get all descendants for specific node
+     */
+    public function testGetAllDescendantsForNode()
+    {
+        extract($this->_createSampleTree());
+        $this->assertEquals( // Descendants same as returned from getDescendants()
+            array(
+                $child1_1->toArray(),
+                $child1_1_1->toArray()
+            ),
+            $child1->getDescendants()->get()->toArray()
+        );
+
+    }
+
+    /**
+     * Helper function
+     *
+     * @return array
+     */
     protected function _createSampleTree()
     {
-        $node  = new Tree();
-        $root  = $node->setAsRoot();
-        $node2 = new Tree();
-        $node2->setChildOf($root);
-        $node3 = new Tree();
-        $node3->setChildOf($root);
-        $nodeChildOfNode2 = new Tree();
-        $nodeChildOfNode2->setChildOf($node2);
-        return $root;
+        $tree               = array();
+        $tree['root']       = with(new Tree())->setAsRoot();
+        $tree['child1']     = with(new Tree())->setChildOf($tree['root']);
+        $tree['child2']     = with(new Tree())->setChildOf($tree['root']);
+        $tree['child3']     = with(new Tree())->setChildOf($tree['root']);
+        $tree['child1_1']   = with(new Tree())->setChildOf($tree['child1']);
+        $tree['child1_1_1'] = with(new Tree())->setChildOf($tree['child1_1']);
+        return $tree;
     }
 }

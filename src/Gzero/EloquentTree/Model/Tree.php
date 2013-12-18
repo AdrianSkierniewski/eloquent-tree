@@ -117,6 +117,8 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Get parent to specific node (if exist)
+     *
      * @return static
      */
     public function getParent()
@@ -132,61 +134,40 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
 
-//
-//    /**
-//     * Funkcja zwraca zbudowane zapytanie, który wciągnie dzieci danego obiektu
-//     *
-//     * @param String $lang_code Kod języka w którym wyciągamy
-//     *
-//     * @return Laravel\Database\Eloquent\Query Jeszcze nie wykonany obiekt zapytania
-//     */
+    /**
+     * Get all children for specific node
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function getChildren()
     {
         return static::where($this->getTreeColumn('parent'), '=', $this->{$this->getKeyName()});
     }
 
-//
-//    /**
-//     * Funkcja wyciąga wszystkich potomków danego węzła
-//     *
-//     * @param String $lang_code Kod języka w którym wyciągamy
-//     *
-//     * @return Laravel\Database\Eloquent\Query Jeszcze nie wykonany obiekt zapytania
-//     */
-//    public function getDescendants($lang_code)
-//    {
-//        return static::withLangs($lang_code)
-//            ->where(
-//                static::$_tree_cols['path'],
-//                'LIKE',
-//                $this->{static::$_tree_cols['path']} . '%'
-//            )
-//            ->where(static::$table . '.' . static::$key, '!=', $this->{static::$key}) // Bez węzła dla którego szukamy potomków
-//            ->order_by(static::$_tree_cols['level'], 'ASC'); // ?
-//    }
-//
-//    /**
-//     * Funkcja wyciąga wszystkich przodków danego węzła
-//     *
-//     * @param String $lang_code Kod języka w którym wyciągamy
-//     *
-//     * @return Laravel\Database\Eloquent\Query Jeszcze nie wykonany obiekt zapytania
-//     */
-//    public function getAncestors($lang_code)
-//    {
-//        return static::withLangs($lang_code)
-//            ->where(
-//                static::$_tree_cols['path'],
-//                'LIKE',
-//                '%' . $this->{static::$key} . '/'
-//            )
-//            ->where(static::$table . '.' . static::$key, '!=', $this->{static::$key}) // Bez węzła dla którego szukamy przodków
-//            ->order_by(static::$_tree_cols['level'], 'ASC');
-//    }
-//
-//
+    /**
+     * Get all descendants for specific node
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function getDescendants()
+    {
+        return static::where($this->getTreeColumn('path'), 'LIKE', $this->{$this->getTreeColumn('path')} . '%')
+            ->where($this->getKeyName(), '!=', $this->{$this->getKeyName()})
+            ->orderBy($this->getTreeColumn('level'), 'ASC');
+    }
 
-//
+    /**
+     * Get all ancestors for specific node
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function getAncestors()
+    {
+        return static::whereIn($this->getKeyName(), explode('/', $this->{$this->getTreeColumn('path')}))
+            ->where($this->getKeyName(), '!=', $this->{$this->getKeyName()})
+            ->orderBy($this->getTreeColumn('level'), 'ASC');
+    }
+
 //    /**
 //     * Funkcja zwraca wszystkie elementy danego drzewa posortowane po wadze. Ze zbioru takich elementów można stworzyć drzewo
 //     * za pomocą metody
