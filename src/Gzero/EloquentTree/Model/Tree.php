@@ -140,14 +140,11 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 //     *
 //     * @return Laravel\Database\Eloquent\Query Jeszcze nie wykonany obiekt zapytania
 //     */
-//    public function getChildren($lang_code = NULL)
-//    {
-//        if (!empty($lang_code)) {
-//            return static::withLangs($lang_code)->where(static::$_tree_cols['parent'], '=', $this->{static::$key});
-//        } else {
-//            return static::where(static::$_tree_cols['parent'], '=', $this->{static::$key});
-//        }
-//    }
+    public function getChildren()
+    {
+        return static::where($this->getTreeColumn('parent'), '=', $this->{$this->getKeyName()});
+    }
+
 //
 //    /**
 //     * Funkcja wyciąga wszystkich potomków danego węzła

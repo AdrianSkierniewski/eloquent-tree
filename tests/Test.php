@@ -22,7 +22,8 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     public function tearDown()
     {
         parent::tearDown();
-        Tree::__resetBootedStaticProperty();
+//        Tree::__resetBootedStaticProperty();
+        $this->app = NULL;
     }
 
     /**
@@ -73,8 +74,8 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
      */
     public function testCreateNewNodeAsChildren()
     {
-        $root  = (new Tree())->setAsRoot();
-        $child = (new Tree())->setChildOf($root);
+        $root  = with(new Tree())->setAsRoot();
+        $child = with(new Tree())->setChildOf($root);
         $this->assertEquals($root->path . $child->id . '/', $child->path, 'Wrong children path!');
         $this->assertEquals($root->level + 1, $child->level, 'Wrong children level!');
         $this->assertEquals($root->id, $child->parent_id, 'Wrong children parent!');
@@ -85,8 +86,8 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
      */
     public function testCreateNewNodeAsSibling()
     {
-        $sibling = (new Tree())->setAsRoot();
-        $node    = (new Tree())->setSiblingOf($sibling);
+        $sibling = with(new Tree())->setAsRoot();
+        $node    = with(new Tree())->setSiblingOf($sibling);
         $this->assertEquals($node->id . '/', $node->path, 'Wrong sibling path!');
         $this->assertEquals($sibling->level, $node->level, 'Wrong sibling level!');
         $this->assertEquals($sibling->parent_id, $node->parent_id, 'Wrong sibling parent!');
@@ -94,13 +95,46 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
 
     public function testChangeNodeToRoot()
     {
-        $root = (new Tree())->setAsRoot();
-        $node = (new Tree())->setChildOf($root);
+        $root = with(new Tree())->setAsRoot();
+        $node = with(new Tree())->setChildOf($root);
         $this->assertEquals($root->toArray(), $node->getParent()->toArray());
         $node->setAsRoot();
         $this->assertEmpty($node->getParent(), 'New root expected to have no parent');
         $this->assertEquals(0, $node->level);
         $this->assertEquals($node->id . '/', $node->path);
         $this->assertEquals($node->parent_id, NULL, 'New root parent_id expected to be NULL');
+    }
+
+    public function testGetChildrenForNode()
+    {
+        $root         = with(new Tree())->setAsRoot();
+        $node         = with(new Tree())->setChildOf($root);
+        $node2        = with(new Tree())->setChildOf($root);
+        $collection[] = $node->toArray();
+        $collection[] = $node2->toArray();
+        $this->assertNotEmpty($node->getParent(), 'Node expects to have a parent');
+        $this->assertEquals($collection, $root->getChildren()->get()->toArray(), 'Root expects to have children');
+
+        // dziecko staje się root'em
+        $newRoot = $node->setAsRoot();
+        $this->assertTrue($newRoot->isRoot(), 'Assert root node');
+        $this->assertEmpty($newRoot->getParent(), 'Expected no parent');
+        $collection[0] = $node2->toArray();
+        unset($collection[1]);
+        $this->assertEquals($collection, $root->getChildren()->get()->toArray(), 'Root expects to have children');
+        $this->assertEquals(array(), $newRoot->getChildren()->get()->toArray(), 'New Root expects to have no children');
+    }
+
+    protected function _createSampleTree()
+    {
+        $node  = new Tree();
+        $root  = $node->setAsRoot();
+        $node2 = new Tree();
+        $node2->setChildOf($root);
+        $node3 = new Tree();
+        $node3->setChildOf($root);
+        $nodeChildOfNode2 = new Tree();
+        $nodeChildOfNode2->setChildOf($node2);
+        return $root;
     }
 }
