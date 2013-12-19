@@ -185,6 +185,16 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Gets all root nodes
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected static function getRoots()
+    {
+        return static::where(static::getTreeColumn('parent'), 'IS', DB::raw('NULL'));
+    }
+
+    /**
      * Get all nodes in tree (with root node)
      *
      * @param int $root_id Root node id
@@ -195,6 +205,39 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     {
         return static::where(static::getTreeColumn('path'), 'LIKE', "$root_id/%")
             ->orderBy(static::getTreeColumn('level'), 'ASC');
+    }
+
+    /**
+     * Rebuilds the tree on the side of Php
+     *
+     * @param array  $records
+     * @param string $presenter Optional presenter class
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public static function buildTree(array $records, $presenter = '')
+    {
+        $count = 0;
+        $refs  = array(); // Reference table to store records in the construction of the tree
+        foreach ($records as &$record) {
+            $refs[$record->{static::getKeyName()}] = & $record; // Adding to ref table (we identify after the id)
+            if ($count === 0) { // We use this condition as a factor in building subtrees, root node is always 1
+                $root = & $record;
+                $count++;
+            } else { // This is not a root, so add them to the parent
+                if (!empty($presenter)) {
+                    if (class_exists($presenter)) {
+                        $refs[$record->{static::getTreeColumn('parent')}]->children[] = new $presenter($record);
+                    } else {
+                        throw new \Exception("No presenter class found: $presenter");
+                    }
+                } else {
+                    $refs[$record->{static::$_tree_cols['parent']}]->children[] = $record;
+                }
+            }
+        }
+        return (!isset($root)) ? FALSE : $root;
     }
 
 //    //-----------------------------------------------------------------------------------------------
@@ -222,40 +265,8 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         array_pop($path); // Remove last empty element
         return $path;
     }
-//    /**
-//     * Funkcja odtwarza z rekordów z bazy strukturę drzewa po stronie PHP
-//     *
-//     * @param array  $records   Lista rekordów z bazy przedstawiających drzewo
-//     * @param string $presenter Opcjonalna nazwa prezentera, który będzie zwracany w wynikach
-//     *
-//     * @return static
-//     * @throws Exception
-//     */
-//    public static function buildTree(array $records, $presenter = '')
-//    {
-//        $count = 0;
-//        $refs  = array(); // Tablica referencji do przechowywania rekordów podczas budowy drzewa
-//        foreach ($records as &$record) {
-//            $refs[$record->{static::$key}] = & $record; // Dodajemy do tablicy referencji nasz rekord i identyfikujemy go po id
-//            if ($count === 0) { // Stosujemy taki zapis ponieważ uwzględniamy też budowanie poddrzew, rootem jest zawsze 1 węzeł
-//                $root = & $record;
-//                $count++;
-//            } else {
-//                if (!empty($presenter)) { // Nie jest to root,  więc dodajemy do rodzica
-//                    if (class_exists($presenter)) {
-//                        $refs[$record->{static::$_tree_cols['parent']}]->children[] = new $presenter($record);
-//                    } else {
-//                        throw new Exception("No presenter class found: $presenter");
-//                    }
-//                } else {
-//                    $refs[$record->{static::$_tree_cols['parent']}]->children[] = $record;
-//                }
-//            }
-//        }
-//        return (!isset($root)) ? FALSE : $root;
-//    }
-//
-//
+
+
 //    /**
 //     * Rekurencja uaktualniająca poziom dzieci
 //     *
@@ -270,45 +281,5 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 //            $this->_updateChildren($child);
 //        }
 //    }
-//
-//    /**
-//     * Funkcja buduje zapytanie wyciągające wszystkie korzenie
-//     *
-//     * @return Laravel\Database\Eloquent\Query Jeszcze nie wykonany obiekt zapytania
-//     */
-//    protected static function _getRoots()
-//    {
-//        return static::where(static::$_tree_cols['parent'], 'IS', DB::raw('NULL'));
-//    }
-//
-//    /**
-//     * Funkcja buduje zapytanie wyciągające root-a dla danego drzewa
-//     *
-//     * @param String $path_or_id Ścieżka dla której szukamy root`a
-//     *
-//     * @return Laravel\Database\Eloquent\Query Jeszcze nie wykonany obiekt zapytania
-//     */
-//    protected static function _getRoot($path_or_id)
-//    {
-//        if (is_numeric($path_or_id)) { // Jeśli mamy do czynienia z menu_id - czyli menu_link_id root`a
-//            $id = $path_or_id;
-//        } else {
-//            $id = preg_replace('/\/.+/', '', $path_or_id, 1);
-//        }
-//        return static::_getRoots()->where(static::$table . '.' . static::$key, '=', $id);
-//    }
-//
-//    /**
-//     * Funkcja podejmuje decyzje jak powinna wyglądać ścieżka w zależności od tego czy węzeł jest już zapisany w bazie
-//     *
-//     * @param String $parent_path Ścieżka rodzica
-//     */
-//    private function __pathExistSetter($parent_path)
-//    {
-//        if ($this->exists) { // Gdy węzeł był już dodany
-//            $this->{static::$_tree_cols['path']} = $parent_path . $this->get_key() . '/';
-//        } else { // Jeśli nie było węzła to na początku dodajemy path rodzica, a dopiero save() ustawia poprawny path
-//            $this->{static::$_tree_cols['path']} = $parent_path; // Bez id rodzeństwa
-//        }
-//    }
+
 }
