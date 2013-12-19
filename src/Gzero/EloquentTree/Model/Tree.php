@@ -68,6 +68,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         $this->{$this->getTreeColumn('parent')} = NULL;
         $this->{$this->getTreeColumn('level')}  = 0;
         $this->save();
+        $this->_updateChildren($this);
         return $this;
     }
 
@@ -85,6 +86,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         $this->{$this->getTreeColumn('parent')} = $parent->{$this->getKeyName()};
         $this->{$this->getTreeColumn('level')}  = $parent->{$this->getTreeColumn('level')} + 1;
         $this->save();
+        $this->_updateChildren($this);
         return $this;
     }
 
@@ -103,6 +105,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
         $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
         $this->save();
+        $this->_updateChildren($this);
         return $this;
     }
 
@@ -233,16 +236,16 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
                         throw new \Exception("No presenter class found: $presenter");
                     }
                 } else {
-                    $refs[$record->{static::$_tree_cols['parent']}]->children[] = $record;
+                    $refs[$record->{static::getTreeColumn('parent')}]->children[] = $record;
                 }
             }
         }
         return (!isset($root)) ? FALSE : $root;
     }
 
-//    //-----------------------------------------------------------------------------------------------
-//    // START                         PROTECTED/PRIVATE
-//    //-----------------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------------
+    // START                         PROTECTED/PRIVATE
+    //-----------------------------------------------------------------------------------------------
 
     /**
      * Creating node if not exist
@@ -266,20 +269,20 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         return $path;
     }
 
-
-//    /**
-//     * Rekurencja uaktualniająca poziom dzieci
-//     *
-//     * @param Tree_Base $parent
-//     */
-//    protected function _updateChildren(Tree_Base $parent)
-//    {
-//        foreach ($parent->getChildren()->get() as $child) {
-//            $child->{static::$_tree_cols['level']} = $parent->{static::$_tree_cols['level']} + 1;
-//            $child->{static::$_tree_cols['path']}  = $parent->{static::$_tree_cols['path']} . $child->{static::$key} . '/';
-//            $child->save();
-//            $this->_updateChildren($child);
-//        }
-//    }
+    /**
+     * Recursive node updating
+     *
+     * @param Tree $parent
+     */
+    protected function _updateChildren(Tree $parent)
+    {
+        foreach ($parent->getChildren()->get() as $child) {
+            $child->{$this->getTreeColumn('level')} = $parent->{$this->getTreeColumn('level')} + 1;
+            $child->{$this->getTreeColumn('path')}  = $parent->{$this->getTreeColumn('path')} .
+                $child->{$this->getKeyName()} . '/';
+            $child->save();
+            $this->_updateChildren($child);
+        }
+    }
 
 }

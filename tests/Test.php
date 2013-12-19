@@ -193,6 +193,19 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     }
 
     /**
+     * Recursive node updating
+     */
+    public function testMoveSubTree()
+    {
+        extract($this->_createAdvancedTree());
+        $this->assertEquals($child2_2->toArray(), $child2_2_1->getParent()->toArray(), 'Node expects to have a specific parent');
+        $this->assertEquals($child2_2_1->level, 3, 'Node expects to have a specific level');
+        $child2_2->setAsRoot();
+        $this->assertEquals(0, $child2_2->level, 'Node expects to have a specific level');
+        $this->assertEquals(1, with(Tree::find($child2_2_1->id))->level, 'Node expects to have a specific level');
+    }
+
+    /**
      * Helper function
      *
      * @return array
@@ -206,6 +219,26 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $tree['child3']     = with(new Tree())->setChildOf($tree['root']);
         $tree['child1_1']   = with(new Tree())->setChildOf($tree['child1']);
         $tree['child1_1_1'] = with(new Tree())->setChildOf($tree['child1_1']);
+        return $tree;
+    }
+
+    /**
+     * Helper function
+     *
+     * @return array
+     */
+    protected function _createAdvancedTree()
+    {
+        $tree               = array();
+        $tree['root']       = with(new Tree())->setAsRoot();
+        $tree['child1']     = with(new Tree())->setChildOf($tree['root']);
+        $tree['child2']     = with(new Tree())->setChildOf($tree['root']);
+        $tree['child3']     = with(new Tree())->setChildOf($tree['root']);
+        $tree['child1_1']   = with(new Tree())->setChildOf($tree['child1']);
+        $tree['child2_1']   = with(new Tree())->setChildOf($tree['child2']);
+        $tree['child2_2']   = with(new Tree())->setChildOf($tree['child2']);
+        $tree['child1_1_1'] = with(new Tree())->setChildOf($tree['child1_1']);
+        $tree['child2_2_1'] = with(new Tree())->setChildOf($tree['child2_2']);
         return $tree;
     }
 }
