@@ -199,12 +199,16 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         }
     }
 
+    //---------------------------------------------------------------------------------------------------------------
+    // START                                 STATIC
+    //---------------------------------------------------------------------------------------------------------------
+
     /**
      * Gets all root nodes
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    protected static function getRoots()
+    public static function getRoots()
     {
         return static::where(static::getTreeColumn('parent'), 'IS', DB::raw('NULL'));
     }
@@ -228,7 +232,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      * @param array  $records
      * @param string $presenter Optional presenter class
      *
-     * @return bool
+     * @return static
      * @throws \Exception
      */
     public static function buildTree($records, $presenter = '')
@@ -244,21 +248,25 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
             } else { // This is not a root, so add them to the parent
                 if (!empty($presenter)) {
                     if (class_exists($presenter)) {
-                        $refs[$record->{static::getTreeColumn('parent')}]->_addChildrenToCollection(new $presenter($record));
+                        $refs[$record->{static::getTreeColumn('parent')}]->_addChildToCollection(new $presenter($record));
                     } else {
                         throw new \Exception("No presenter class found: $presenter");
                     }
                 } else {
-                    $refs[$record->{static::getTreeColumn('parent')}]->_addChildrenToCollection($record);
+                    $refs[$record->{static::getTreeColumn('parent')}]->_addChildToCollection($record);
                 }
             }
         }
         return (!isset($root)) ? FALSE : $root;
     }
 
-    //-----------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------------------
+    // END                                  STATIC
+    //---------------------------------------------------------------------------------------------------------------
+
+    //---------------------------------------------------------------------------------------------------------------
     // START                         PROTECTED/PRIVATE
-    //-----------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------------------
 
     /**
      * Creating node if not exist
@@ -287,7 +295,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      *
      * @param Tree $child Child node
      */
-    protected function _addChildrenToCollection(Tree &$child)
+    protected function _addChildToCollection(Tree &$child)
     {
         if (empty($this->_children)) {
             $this->_children = new Collection();
@@ -310,5 +318,9 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
             $this->_updateChildren($child);
         }
     }
+
+    //---------------------------------------------------------------------------------------------------------------
+    // END                          PROTECTED/PRIVATE
+    //---------------------------------------------------------------------------------------------------------------
 
 }
