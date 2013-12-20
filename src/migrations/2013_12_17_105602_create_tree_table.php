@@ -21,7 +21,7 @@ class CreateTreeTable extends Migration {
                 $table->integer('parent_id')->unsigned()->nullable();
                 $table->integer('level')->default(0);
                 $table->timestamps();
-                $table->index('path');
+                $table->index(array('path', 'parent_id'));
                 $table->foreign('parent_id')->references('id')->on('trees')->on_delete('CASCADE');
             }
         );
