@@ -132,6 +132,16 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Check if node is leaf
+     *
+     * @return bool
+     */
+    public function isLeaf()
+    {
+        return (bool) static::where($this->getTreeColumn('parent'), '=', $this->{$this->getKeyName()})->count();
+    }
+
+    /**
      * Get parent to specific node (if exist)
      *
      * @return static
