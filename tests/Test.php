@@ -190,6 +190,8 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
             Tree::fetchTree($root->id)->get()->toArray(),
             'Expected all nodes'
         );
+
+        print_r(Tree::buildTree(Tree::fetchTree($root->id)->get()));
     }
 
     /**

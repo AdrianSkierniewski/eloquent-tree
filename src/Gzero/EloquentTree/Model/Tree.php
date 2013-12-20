@@ -1,6 +1,8 @@
 <?php namespace Gzero\EloquentTree\Model;
 
 
+use Illuminate\Database\Eloquent\Collection;
+
 class Tree extends \Illuminate\Database\Eloquent\Model {
 
     /**
@@ -54,6 +56,16 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     {
         parent::boot();
         static::observe(new Observer());
+    }
+
+    /**
+     * Returns children for this node added by buildTree
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function children()
+    {
+        return $this->_children;
     }
 
     /**
@@ -219,24 +231,25 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      * @return bool
      * @throws \Exception
      */
-    public static function buildTree(array $records, $presenter = '')
+    public static function buildTree($records, $presenter = '')
     {
         $count = 0;
         $refs  = array(); // Reference table to store records in the construction of the tree
         foreach ($records as &$record) {
-            $refs[$record->{static::getKeyName()}] = & $record; // Adding to ref table (we identify after the id)
+            /* @var Tree $record */
+            $refs[$record->{$record->getKeyName()}] = & $record; // Adding to ref table (we identify after the id)
             if ($count === 0) { // We use this condition as a factor in building subtrees, root node is always 1
                 $root = & $record;
                 $count++;
             } else { // This is not a root, so add them to the parent
                 if (!empty($presenter)) {
                     if (class_exists($presenter)) {
-                        $refs[$record->{static::getTreeColumn('parent')}]->children[] = new $presenter($record);
+                        $refs[$record->{static::getTreeColumn('parent')}]->_addChildrenToCollection(new $presenter($record));
                     } else {
                         throw new \Exception("No presenter class found: $presenter");
                     }
                 } else {
-                    $refs[$record->{static::getTreeColumn('parent')}]->children[] = $record;
+                    $refs[$record->{static::getTreeColumn('parent')}]->_addChildrenToCollection($record);
                 }
             }
         }
@@ -267,6 +280,19 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         $path = explode('/', $this->{$this->getTreeColumn('path')});
         array_pop($path); // Remove last empty element
         return $path;
+    }
+
+    /**
+     * Adds children for this node while building the tree structure in PHP
+     *
+     * @param Tree $child Child node
+     */
+    protected function _addChildrenToCollection(Tree &$child)
+    {
+        if (empty($this->_children)) {
+            $this->_children = new Collection();
+        }
+        $this->_children->add($child);
     }
 
     /**
