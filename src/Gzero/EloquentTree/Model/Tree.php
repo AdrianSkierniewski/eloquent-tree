@@ -42,12 +42,14 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     public function setAsRoot()
     {
         $this->_handleNewNodes();
-        $oldDescendants                         = $this->_getOldDescendants();
-        $this->{$this->getTreeColumn('path')}   = $this->{$this->getKeyName()} . '/';
-        $this->{$this->getTreeColumn('parent')} = NULL;
-        $this->{$this->getTreeColumn('level')}  = 0;
-        $this->save();
-        $this->_updateDescendants($this, $oldDescendants);
+        if (!$this->isRoot()) { // Only if it is not already root
+            $oldDescendants                         = $this->_getOldDescendants();
+            $this->{$this->getTreeColumn('path')}   = $this->{$this->getKeyName()} . '/';
+            $this->{$this->getTreeColumn('parent')} = NULL;
+            $this->{$this->getTreeColumn('level')}  = 0;
+            $this->save();
+            $this->_updateDescendants($this, $oldDescendants);
+        }
         return $this;
     }
 
@@ -61,12 +63,14 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     public function setChildOf(Tree $parent)
     {
         $this->_handleNewNodes();
-        $oldDescendants                         = $this->_getOldDescendants();
-        $this->{$this->getTreeColumn('path')}   = $parent->{$this->getTreeColumn('path')} . $this->{$this->getKeyName()} . '/';
-        $this->{$this->getTreeColumn('parent')} = $parent->{$this->getKeyName()};
-        $this->{$this->getTreeColumn('level')}  = $parent->{$this->getTreeColumn('level')} + 1;
-        $this->save();
-        $this->_updateDescendants($this, $oldDescendants);
+        if ($parent->{$this->getTreeColumn('path')} != $this->_removeLastNodeFromPath()) { // Only if new parent
+            $oldDescendants                         = $this->_getOldDescendants();
+            $this->{$this->getTreeColumn('path')}   = $this->_generateNewPath($parent);
+            $this->{$this->getTreeColumn('parent')} = $parent->{$this->getKeyName()};
+            $this->{$this->getTreeColumn('level')}  = $parent->{$this->getTreeColumn('level')} + 1;
+            $this->save();
+            $this->_updateDescendants($this, $oldDescendants);
+        }
         return $this;
     }
 
@@ -80,13 +84,14 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     public function setSiblingOf(Tree $sibling)
     {
         $this->_handleNewNodes();
-        $oldDescendants                         = $this->_getOldDescendants();
-        $this->{$this->getTreeColumn('path')}   =
-            preg_replace('/\d\/$/', '', $sibling->{$this->getTreeColumn('path')}) . $this->{$this->getKeyName()} . '/';
-        $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
-        $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
-        $this->save();
-        $this->_updateDescendants($this, $oldDescendants);
+        if ($sibling->_removeLastNodeFromPath() != $this->_removeLastNodeFromPath()) { // Only if new parent
+            $oldDescendants                         = $this->_getOldDescendants();
+            $this->{$this->getTreeColumn('path')}   = $sibling->_removeLastNodeFromPath() . $this->{$this->getKeyName()} . '/';
+            $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
+            $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
+            $this->save();
+            $this->_updateDescendants($this, $oldDescendants);
+        }
         return $this;
     }
 
@@ -321,6 +326,28 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Removing last node id from path and returns it
+     *
+     * @return mixed Node path
+     */
+    protected function _removeLastNodeFromPath()
+    {
+        return preg_replace('/\d\/$/', '', $this->{$this->getTreeColumn('path')});
+    }
+
+    /**
+     * Generating new path based on parent path
+     *
+     * @param Tree $parent Parent node
+     *
+     * @return string New path
+     */
+    protected function _generateNewPath(Tree $parent)
+    {
+        return $parent->{$this->getTreeColumn('path')} . $this->{$this->getKeyName()} . '/';
+    }
+
+    /**
      * Adds children for this node while building the tree structure in PHP
      *
      * @param Tree $child Child node
@@ -360,16 +387,18 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
             $refs[$child->getKey()] = $child;
             $parent_id              = $child->{$this->getTreeColumn('parent')};
             if (!empty($refs[$parent_id])) {
-                $refs[$child->getKey()]->level = $refs[$parent_id]->level + 1; // New level
-                $refs[$child->getKey()]->path  = $refs[$parent_id]->path . $child->getKey() . '/'; // New path
-                DB::table($this->getTable())
-                    ->where($this->getKeyName(), '=', $child->getKey())
-                    ->update(
-                        array(
-                            'level' => $refs[$child->getKey()]->level,
-                            'path'  => $refs[$child->getKey()]->path
-                        )
-                    );
+                if ($refs[$parent_id]->path != $refs[$child->getKey()]->_removeLastNodeFromPath()) {
+                    $refs[$child->getKey()]->level = $refs[$parent_id]->level + 1; // New level
+                    $refs[$child->getKey()]->path  = $refs[$parent_id]->path . $child->getKey() . '/'; // New path
+                    DB::table($this->getTable())
+                        ->where($this->getKeyName(), '=', $child->getKey())
+                        ->update(
+                            array(
+                                'level' => $refs[$child->getKey()]->level,
+                                'path'  => $refs[$child->getKey()]->path
+                            )
+                        );
+                }
             }
         }
     }
