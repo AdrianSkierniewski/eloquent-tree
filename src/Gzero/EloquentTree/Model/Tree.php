@@ -17,9 +17,9 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     protected $_parent;
     /**
-     * Array for children elements
+     * Collection for children elements
      *
-     * @var array
+     * @var \Illuminate\Database\Eloquent\Collection
      */
     public $children;
     /**
@@ -127,11 +127,11 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     /**
      * Find all children for specific node
      *
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function findChildren()
     {
-        return static::where($this->getTreeColumn('parent'), '=', $this->{$this->getKeyName()});
+        return $this->hasMany(get_class($this), $this->getTreeColumn('parent'));
     }
 
     /**
@@ -187,6 +187,41 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         $nodes->prepend($this); // Set current node as root
         static::buildCompleteTree($nodes, $presenter);
         return $this;
+    }
+
+    /**
+     * Displays a tree as html list
+     *
+     * @param string $field node property to display
+     * @param Tree   $node  Optional from node
+     *
+     * @return string
+     */
+    public function printTree($field, Tree $node = NULL)
+    {
+        $output = '';
+        if (!$node) {
+            $node = $this;
+            $output .= '<ul class="level-' . $node->level . '">';
+            $output .= '<li>';
+            $output .= '<span>' . $node->{$field} . '</span>';
+            $end = '</li></ul>';
+        }
+        if (count($node->children)) {
+            $output .= '<ul class="level-' . ($node->level + 1) . '">';
+            foreach ($node->children as $child) {
+                $output .= '<li>';
+                $output .= '<span>' . $child->{$field} . '</span>';
+                $output .= $this->printTree($field, $child);
+            }
+            $output .= '</ul>';
+        } else {
+            $output .= '</li>';
+        }
+        if (isset($end)) {
+            $output .= $end;
+        }
+        return $output;
     }
 
     //---------------------------------------------------------------------------------------------------------------
@@ -344,3 +379,8 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     //---------------------------------------------------------------------------------------------------------------
 
 }
+
+
+/**
+ * @TODO Print, Map
+ */

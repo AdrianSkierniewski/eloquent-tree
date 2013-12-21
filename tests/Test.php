@@ -219,7 +219,6 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals($treeRoot->children[0]->children[0]->children[0]->id, $child1_1_1->id, 'Specific child expected');
         $this->assertEquals($treeRoot->children[1]->id, $child2->id, 'Specific child expected');
         $this->assertEquals($treeRoot->children[1]->children[1]->children[0]->id, $child2_2_1->id, 'Specific child expected');
-
     }
 
     /**
