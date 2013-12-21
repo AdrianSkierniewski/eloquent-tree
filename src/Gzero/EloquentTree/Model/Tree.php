@@ -1,6 +1,7 @@
 <?php namespace Gzero\EloquentTree\Model;
 
 
+use DB;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -41,11 +42,12 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     public function setAsRoot()
     {
         $this->_handleNewNodes();
+        $oldDescendants                         = $this->_getOldDescendants();
         $this->{$this->getTreeColumn('path')}   = $this->{$this->getKeyName()} . '/';
         $this->{$this->getTreeColumn('parent')} = NULL;
         $this->{$this->getTreeColumn('level')}  = 0;
         $this->save();
-        $this->_updateChildren($this);
+        $this->_updateDescendants($this, $oldDescendants);
         return $this;
     }
 
@@ -59,11 +61,12 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     public function setChildOf(Tree $parent)
     {
         $this->_handleNewNodes();
+        $oldDescendants                         = $this->_getOldDescendants();
         $this->{$this->getTreeColumn('path')}   = $parent->{$this->getTreeColumn('path')} . $this->{$this->getKeyName()} . '/';
         $this->{$this->getTreeColumn('parent')} = $parent->{$this->getKeyName()};
         $this->{$this->getTreeColumn('level')}  = $parent->{$this->getTreeColumn('level')} + 1;
         $this->save();
-        $this->_updateChildren($this);
+        $this->_updateDescendants($this, $oldDescendants);
         return $this;
     }
 
@@ -77,12 +80,13 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     public function setSiblingOf(Tree $sibling)
     {
         $this->_handleNewNodes();
+        $oldDescendants                         = $this->_getOldDescendants();
         $this->{$this->getTreeColumn('path')}   =
             preg_replace('/\d\/$/', '', $sibling->{$this->getTreeColumn('path')}) . $this->{$this->getKeyName()} . '/';
         $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
         $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
         $this->save();
-        $this->_updateChildren($this);
+        $this->_updateDescendants($this, $oldDescendants);
         return $this;
     }
 
@@ -135,26 +139,24 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
-     * Find all descendants for specific node
+     * Find all descendants for specific node with this node as root
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function findDescendants()
     {
         return static::where($this->getTreeColumn('path'), 'LIKE', $this->{$this->getTreeColumn('path')} . '%')
-            ->where($this->getKeyName(), '!=', $this->{$this->getKeyName()})
             ->orderBy($this->getTreeColumn('level'), 'ASC');
     }
 
     /**
-     * Find all ancestors for specific node
+     * Find all ancestors for specific node with this node as leaf
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function findAncestors()
     {
         return static::whereIn($this->getKeyName(), $this->_extractPath())
-            ->where($this->getKeyName(), '!=', $this->{$this->getKeyName()})
             ->orderBy($this->getTreeColumn('level'), 'ASC');
     }
 
@@ -180,13 +182,32 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      * @param \Illuminate\Database\Eloquent\Collection $nodes     Nodes from which we are build tree
      * @param string                                   $presenter Optional presenter class
      *
-     * @return $this
+     * @return static Root node
      */
     public function buildTree(Collection $nodes, $presenter = '')
     {
-        $nodes->prepend($this); // Set current node as root
-        static::buildCompleteTree($nodes, $presenter);
-        return $this;
+        $count = 0;
+        $refs  = array(); // Reference table to store records in the construction of the tree
+        foreach ($nodes as &$node) {
+            /* @var Tree $node */
+            $refs[$node->{$node->getKeyName()}] = & $node; // Adding to ref table (we identify after the id)
+            if ($count === 0) { // We use this condition as a factor in building subtrees, root node is always 1
+                $root = & $node;
+                $count++;
+            } else { // This is not a root, so add them to the parent
+                $index = $node->{$this->getTreeColumn('parent')};
+                if (empty($refs[$index]) and $index == $this->id) { // If Parent not exist but is current node
+                    $refs[$index] = & $this; // Current node is root
+                    $root         = $this;
+                }
+                if (isset($presenter) and class_exists($presenter)) {
+                    $refs[$index]->_addChildToCollection(new $presenter($node));
+                } else {
+                    $refs[$index]->_addChildToCollection($node);
+                }
+            }
+        }
+        return (!isset($root)) ? FALSE : $root;
     }
 
     /**
@@ -197,7 +218,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      *
      * @return string
      */
-    public function printTree($field, Tree $node = NULL)
+    public function renderTree($field, Tree $node = NULL)
     {
         $output = '';
         if (!$node) {
@@ -212,7 +233,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
             foreach ($node->children as $child) {
                 $output .= '<li>';
                 $output .= '<span>' . $child->{$field} . '</span>';
-                $output .= $this->printTree($field, $child);
+                $output .= $this->renderTree($field, $child);
             }
             $output .= '</ul>';
         } else {
@@ -268,52 +289,6 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         return static::where(static::getTreeColumn('parent'), 'IS', DB::raw('NULL'));
     }
 
-    /**
-     * Get all nodes in tree (with root node)
-     *
-     * @param int $root_id Root node id
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public static function fetchTree($root_id)
-    {
-        return static::where(static::getTreeColumn('path'), 'LIKE', "$root_id/%")
-            ->orderBy(static::getTreeColumn('level'), 'ASC');
-    }
-
-    /**
-     * Rebuilds the entire tree on the PHP side
-     *
-     * @param \Illuminate\Database\Eloquent\Collection $nodes     Nodes from which we are build tree
-     * @param string                                   $presenter Optional presenter class
-     *
-     * @return static Root node
-     * @throws \Exception
-     */
-    public static function buildCompleteTree(Collection $nodes, $presenter = '')
-    {
-        $count = 0;
-        $refs  = array(); // Reference table to store records in the construction of the tree
-        foreach ($nodes as &$node) {
-            /* @var Tree $node */
-            $refs[$node->{$node->getKeyName()}] = & $node; // Adding to ref table (we identify after the id)
-            if ($count === 0) { // We use this condition as a factor in building subtrees, root node is always 1
-                $root = & $node;
-                $count++;
-            } else { // This is not a root, so add them to the parent
-                if (!empty($presenter)) {
-                    if (class_exists($presenter)) {
-                        $refs[$node->{static::getTreeColumn('parent')}]->_addChildToCollection(new $presenter($node));
-                    } else {
-                        throw new \Exception("No presenter class found: $presenter");
-                    }
-                } else {
-                    $refs[$node->{static::getTreeColumn('parent')}]->_addChildToCollection($node);
-                }
-            }
-        }
-        return (!isset($root)) ? FALSE : $root;
-    }
 
     //---------------------------------------------------------------------------------------------------------------
     // END                                  STATIC
@@ -359,18 +334,43 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Gets old descendants before modify parent
+     *
+     * @return Collection|static[]
+     */
+    protected function _getOldDescendants()
+    {
+        $collection = $this->findDescendants()->get();
+        $collection->shift(); // Removing current node from update
+        return $collection;
+    }
+
+    /**
      * Recursive node updating
      *
-     * @param Tree $parent
+     * @param Tree       $node           Updated node
+     * @param Collection $oldDescendants Old descendants collection (just before modify parent)
      */
-    protected function _updateChildren(Tree $parent)
+
+    protected function _updateDescendants(Tree $node, $oldDescendants)
     {
-        foreach ($parent->findChildren()->get() as $child) {
-            $child->{$this->getTreeColumn('level')} = $parent->{$this->getTreeColumn('level')} + 1;
-            $child->{$this->getTreeColumn('path')}  = $parent->{$this->getTreeColumn('path')} .
-                $child->{$this->getKeyName()} . '/';
-            $child->save();
-            $this->_updateChildren($child);
+        $refs                  = array();
+        $refs[$node->getKey()] = & $node; // Updated node
+        foreach ($oldDescendants as &$child) {
+            $refs[$child->getKey()] = $child;
+            $parent_id              = $child->{$this->getTreeColumn('parent')};
+            if (!empty($refs[$parent_id])) {
+                $refs[$child->getKey()]->level = $refs[$parent_id]->level + 1; // New level
+                $refs[$child->getKey()]->path  = $refs[$parent_id]->path . $child->getKey() . '/'; // New path
+                DB::table($this->getTable())
+                    ->where($this->getKeyName(), '=', $child->getKey())
+                    ->update(
+                        array(
+                            'level' => $refs[$child->getKey()]->level,
+                            'path'  => $refs[$child->getKey()]->path
+                        )
+                    );
+            }
         }
     }
 
@@ -379,8 +379,3 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     //---------------------------------------------------------------------------------------------------------------
 
 }
-
-
-/**
- * @TODO Print, Map
- */

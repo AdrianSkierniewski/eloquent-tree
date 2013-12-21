@@ -141,7 +141,8 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
             array(
                 $root->toArray(),
                 $child1->toArray(),
-                $child1_1->toArray()
+                $child1_1->toArray(),
+                $child1_1_1->toArray() // Last node is for which we are looking for Ancestors
             ),
             $child1_1_1->findAncestors()->get()->toArray()
         );
@@ -155,6 +156,7 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         extract($this->_createSampleTree());
         $this->assertEquals( // Descendants same as returned from findDescendants()
             array(
+                $child1->toArray(),
                 $child1_1->toArray(),
                 $child1_1_1->toArray()
             ),
@@ -173,26 +175,6 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     }
 
     /**
-     * Fetch all nodes form tree
-     */
-    public function testFetchTree()
-    {
-        extract($this->_createSampleTree());
-        $this->assertEquals( // Nodes same as returned from fetchTree()
-            array(
-                $root->toArray(),
-                $child1->toArray(),
-                $child2->toArray(),
-                $child3->toArray(),
-                $child1_1->toArray(),
-                $child1_1_1->toArray(),
-            ),
-            Tree::fetchTree($root->id)->get()->toArray(),
-            'Expected all nodes'
-        );
-    }
-
-    /**
      * Recursive node updating
      */
     public function testMoveSubTree()
@@ -203,6 +185,8 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $child2_2->setAsRoot();
         $this->assertEquals(0, $child2_2->level, 'Node expects to have a specific level');
         $this->assertEquals(1, with(Tree::find($child2_2_1->id))->level, 'Node expects to have a specific level');
+        $this->assertEquals(1, with(Tree::find($child2_2_2->id))->level, 'Node expects to have a specific level');
+        $this->assertEquals(2, with(Tree::find($child2_2_2_1->id))->level, 'Node expects to have a specific level');
     }
 
 
@@ -212,7 +196,7 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     public function testBuildCompleteTree()
     {
         extract($this->_createAdvancedTree());
-        $treeRoot = Tree::buildCompleteTree(Tree::fetchTree($root->id)->get());
+        $treeRoot = $root->buildTree($root->findDescendants()->get());
         $this->assertEquals($root->id, $treeRoot->id, 'Specific child expected');
         $this->assertEquals($treeRoot->children[0]->id, $child1->id, 'Specific child expected');
         $this->assertEquals($treeRoot->children[0]->children[0]->id, $child1_1->id, 'Specific child expected');
@@ -245,16 +229,18 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
      */
     protected function _createAdvancedTree()
     {
-        $tree               = array();
-        $tree['root']       = with(new Tree())->setAsRoot();
-        $tree['child1']     = with(new Tree())->setChildOf($tree['root']);
-        $tree['child2']     = with(new Tree())->setChildOf($tree['root']);
-        $tree['child3']     = with(new Tree())->setChildOf($tree['root']);
-        $tree['child1_1']   = with(new Tree())->setChildOf($tree['child1']);
-        $tree['child2_1']   = with(new Tree())->setChildOf($tree['child2']);
-        $tree['child2_2']   = with(new Tree())->setChildOf($tree['child2']);
-        $tree['child1_1_1'] = with(new Tree())->setChildOf($tree['child1_1']);
-        $tree['child2_2_1'] = with(new Tree())->setChildOf($tree['child2_2']);
+        $tree                 = array();
+        $tree['root']         = with(new Tree())->setAsRoot();
+        $tree['child1']       = with(new Tree())->setChildOf($tree['root']);
+        $tree['child2']       = with(new Tree())->setChildOf($tree['root']);
+        $tree['child3']       = with(new Tree())->setChildOf($tree['root']);
+        $tree['child1_1']     = with(new Tree())->setChildOf($tree['child1']);
+        $tree['child2_1']     = with(new Tree())->setChildOf($tree['child2']);
+        $tree['child2_2']     = with(new Tree())->setChildOf($tree['child2']);
+        $tree['child1_1_1']   = with(new Tree())->setChildOf($tree['child1_1']);
+        $tree['child2_2_1']   = with(new Tree())->setChildOf($tree['child2_2']);
+        $tree['child2_2_2']   = with(new Tree())->setChildOf($tree['child2_2']);
+        $tree['child2_2_2_1'] = with(new Tree())->setChildOf($tree['child2_2_2']);
         return $tree;
     }
 }
