@@ -3,6 +3,11 @@
 
 use Illuminate\Database\Eloquent\Collection;
 
+/**
+ * Class Tree
+ *
+ * @package Gzero\EloquentTree\Model
+ */
 class Tree extends \Illuminate\Database\Eloquent\Model {
 
     /**
@@ -16,7 +21,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      *
      * @var array
      */
-    protected $_children = array();
+    public $children;
     /**
      * Database mapping tree fields
      *
@@ -27,46 +32,6 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         'parent' => 'parent_id',
         'level'  => 'level'
     );
-
-    /**
-     * ONLY FOR TESTS!
-     * Metod resets static::$booted
-     */
-    public static function __resetBootedStaticProperty()
-    {
-        static::$booted = array();
-    }
-
-    /**
-     * Get tree column for actual model
-     *
-     * @param string $name column name [path|parent|level]
-     *
-     * @return null
-     */
-    public static function getTreeColumn($name)
-    {
-        if (!empty(static::$_tree_cols[$name])) {
-            return static::$_tree_cols[$name];
-        }
-        return NULL;
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-        static::observe(new Observer());
-    }
-
-    /**
-     * Returns children for this node added by buildTree
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function children()
-    {
-        return $this->_children;
-    }
 
     /**
      * Set node as root node
@@ -160,21 +125,21 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
 
 
     /**
-     * Get all children for specific node
+     * Find all children for specific node
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function getChildren()
+    public function findChildren()
     {
         return static::where($this->getTreeColumn('parent'), '=', $this->{$this->getKeyName()});
     }
 
     /**
-     * Get all descendants for specific node
+     * Find all descendants for specific node
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function getDescendants()
+    public function findDescendants()
     {
         return static::where($this->getTreeColumn('path'), 'LIKE', $this->{$this->getTreeColumn('path')} . '%')
             ->where($this->getKeyName(), '!=', $this->{$this->getKeyName()})
@@ -182,11 +147,11 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
-     * Get all ancestors for specific node
+     * Find all ancestors for specific node
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function getAncestors()
+    public function findAncestors()
     {
         return static::whereIn($this->getKeyName(), $this->_extractPath())
             ->where($this->getKeyName(), '!=', $this->{$this->getKeyName()})
@@ -194,11 +159,11 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
-     * Get root for this node
+     * Find root for this node
      *
      * @return $this
      */
-    public function getRoot()
+    public function findRoot()
     {
         if ($this->isRoot()) {
             return $this;
@@ -209,9 +174,54 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         }
     }
 
+    /**
+     * Rebuilds sub-tree for this node
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $nodes     Nodes from which we are build tree
+     * @param string                                   $presenter Optional presenter class
+     *
+     * @return $this
+     */
+    public function buildTree(Collection $nodes, $presenter = '')
+    {
+        $nodes->prepend($this); // Set current node as root
+        static::buildCompleteTree($nodes, $presenter);
+        return $this;
+    }
+
     //---------------------------------------------------------------------------------------------------------------
     // START                                 STATIC
     //---------------------------------------------------------------------------------------------------------------
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::observe(new Observer());
+    }
+
+    /**
+     * ONLY FOR TESTS!
+     * Metod resets static::$booted
+     */
+    public static function __resetBootedStaticProperty()
+    {
+        static::$booted = array();
+    }
+
+    /**
+     * Get tree column for actual model
+     *
+     * @param string $name column name [path|parent|level]
+     *
+     * @return null
+     */
+    public static function getTreeColumn($name)
+    {
+        if (!empty(static::$_tree_cols[$name])) {
+            return static::$_tree_cols[$name];
+        }
+        return NULL;
+    }
 
     /**
      * Gets all root nodes
@@ -237,33 +247,33 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
-     * Rebuilds the tree on the side of Php
+     * Rebuilds the entire tree on the PHP side
      *
-     * @param array  $records
-     * @param string $presenter Optional presenter class
+     * @param \Illuminate\Database\Eloquent\Collection $nodes     Nodes from which we are build tree
+     * @param string                                   $presenter Optional presenter class
      *
-     * @return static
+     * @return static Root node
      * @throws \Exception
      */
-    public static function buildTree($records, $presenter = '')
+    public static function buildCompleteTree(Collection $nodes, $presenter = '')
     {
         $count = 0;
         $refs  = array(); // Reference table to store records in the construction of the tree
-        foreach ($records as &$record) {
-            /* @var Tree $record */
-            $refs[$record->{$record->getKeyName()}] = & $record; // Adding to ref table (we identify after the id)
+        foreach ($nodes as &$node) {
+            /* @var Tree $node */
+            $refs[$node->{$node->getKeyName()}] = & $node; // Adding to ref table (we identify after the id)
             if ($count === 0) { // We use this condition as a factor in building subtrees, root node is always 1
-                $root = & $record;
+                $root = & $node;
                 $count++;
             } else { // This is not a root, so add them to the parent
                 if (!empty($presenter)) {
                     if (class_exists($presenter)) {
-                        $refs[$record->{static::getTreeColumn('parent')}]->_addChildToCollection(new $presenter($record));
+                        $refs[$node->{static::getTreeColumn('parent')}]->_addChildToCollection(new $presenter($node));
                     } else {
                         throw new \Exception("No presenter class found: $presenter");
                     }
                 } else {
-                    $refs[$record->{static::getTreeColumn('parent')}]->_addChildToCollection($record);
+                    $refs[$node->{static::getTreeColumn('parent')}]->_addChildToCollection($node);
                 }
             }
         }
@@ -307,10 +317,10 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     protected function _addChildToCollection(Tree &$child)
     {
-        if (empty($this->_children)) {
-            $this->_children = new Collection();
+        if (empty($this->children)) {
+            $this->children = new Collection();
         }
-        $this->_children->add($child);
+        $this->children->add($child);
     }
 
     /**
@@ -320,7 +330,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     protected function _updateChildren(Tree $parent)
     {
-        foreach ($parent->getChildren()->get() as $child) {
+        foreach ($parent->findChildren()->get() as $child) {
             $child->{$this->getTreeColumn('level')} = $parent->{$this->getTreeColumn('level')} + 1;
             $child->{$this->getTreeColumn('path')}  = $parent->{$this->getTreeColumn('path')} .
                 $child->{$this->getKeyName()} . '/';

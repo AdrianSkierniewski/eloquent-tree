@@ -110,7 +110,7 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     /**
      * Get all children for specific node
      */
-    public function testGetChildrenForNode()
+    public function testfindChildrenForNode()
     {
         $root         = with(new Tree())->setAsRoot();
         $node         = with(new Tree())->setChildOf($root);
@@ -118,7 +118,7 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $collection[] = $node->toArray();
         $collection[] = $node2->toArray();
         $this->assertNotEmpty($node->getParent(), 'Node expects to have a parent');
-        $this->assertEquals($collection, $root->getChildren()->get()->toArray(), 'Root expects to have children');
+        $this->assertEquals($collection, $root->findChildren()->get()->toArray(), 'Root expects to have children');
 
         // children becomes root node
         $newRoot = $node->setAsRoot();
@@ -126,24 +126,24 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEmpty($newRoot->getParent(), 'Expected no parent');
         $collection[0] = $node2->toArray();
         unset($collection[1]);
-        $this->assertEquals($collection, $root->getChildren()->get()->toArray(), 'Root expects to have children');
-        $this->assertEquals(array(), $newRoot->getChildren()->get()->toArray(), 'New Root expects to have no children');
+        $this->assertEquals($collection, $root->findChildren()->get()->toArray(), 'Root expects to have children');
+        $this->assertEquals(array(), $newRoot->findChildren()->get()->toArray(), 'New Root expects to have no children');
     }
 
     /**
      * Get all ancestors for specific node
      */
-    public function testGetAncestorsForNode()
+    public function testfindAncestorsForNode()
     {
         extract($this->_createSampleTree());
         $this->assertEquals($child1_1->toArray(), $child1_1_1->getParent()->toArray(), 'Node expects to have a specific parent');
-        $this->assertEquals( // Ancestors same as returned from getAncestors()
+        $this->assertEquals( // Ancestors same as returned from findAncestors()
             array(
                 $root->toArray(),
                 $child1->toArray(),
                 $child1_1->toArray()
             ),
-            $child1_1_1->getAncestors()->get()->toArray()
+            $child1_1_1->findAncestors()->get()->toArray()
         );
     }
 
@@ -153,12 +153,12 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     public function testGetAllDescendantsForNode()
     {
         extract($this->_createSampleTree());
-        $this->assertEquals( // Descendants same as returned from getDescendants()
+        $this->assertEquals( // Descendants same as returned from findDescendants()
             array(
                 $child1_1->toArray(),
                 $child1_1_1->toArray()
             ),
-            $child1->getDescendants()->get()->toArray()
+            $child1->findDescendants()->get()->toArray()
         );
 
     }
@@ -166,10 +166,10 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     /**
      * Get root for specific node
      */
-    public function testGetRootNode()
+    public function testfindRootNode()
     {
         extract($this->_createSampleTree());
-        $this->assertEquals($root->toArray(), $child1_1_1->getRoot()->toArray(), 'Expected root node');
+        $this->assertEquals($root->toArray(), $child1_1_1->findRoot()->toArray(), 'Expected root node');
     }
 
     /**
@@ -190,8 +190,6 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
             Tree::fetchTree($root->id)->get()->toArray(),
             'Expected all nodes'
         );
-
-        print_r(Tree::buildTree(Tree::fetchTree($root->id)->get()));
     }
 
     /**
