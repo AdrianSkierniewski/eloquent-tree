@@ -5,7 +5,7 @@
  * Date: 17.12.13
  * Time: 11:26
  */
-use Gzero\EloquentTree\Model\Tree;
+require_once 'Model/Tree.php'; // Test model
 
 class Test extends \Illuminate\Foundation\Testing\TestCase {
 
@@ -203,6 +203,51 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals($treeRoot->children[0]->children[0]->children[0]->id, $child1_1_1->id, 'Specific child expected');
         $this->assertEquals($treeRoot->children[1]->id, $child2->id, 'Specific child expected');
         $this->assertEquals($treeRoot->children[1]->children[1]->children[0]->id, $child2_2_1->id, 'Specific child expected');
+    }
+
+    /**
+     * Tree building from array
+     */
+    public function testMapArray()
+    {
+        Tree::mapArray(
+            array(
+                array(
+                    'children' => array(
+                        array(
+                            'children' => array(
+                                array(
+                                    'children' => array(
+                                        array(
+                                            'children' => array()
+                                        ),
+                                        array(
+                                            'children' => array()
+                                        )
+                                    )
+                                ),
+                                array(
+                                    'children' => array()
+                                )
+                            )
+                        ),
+                        array(
+                            'children' => array()
+                        )
+                    )
+                ),
+                array(
+                    'children' => array()
+                ),
+                array(
+                    'children' => array()
+                )
+            )
+        );
+        $this->assertEquals(3, Tree::getRoots()->count(), 'Expected numer of Roots');
+        $this->assertEquals(7, Tree::find(1)->findDescendants()->count(), 'Expected numer of Descendants');
+        $this->assertEquals(2, Tree::find(1)->findChildren()->count(), 'Expected numer of Children');
+        $this->assertEquals(4, Tree::find(5)->findAncestors()->count(), 'Expected numer of Ancestors'); // Most nested
     }
 
     /**

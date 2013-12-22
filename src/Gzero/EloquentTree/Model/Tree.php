@@ -2,7 +2,6 @@
 
 
 use DB;
-use Gzero\EloquentTree\Model\Exception\SelfConnectionExc;
 use Gzero\EloquentTree\Model\Exception\SelfConnectionException;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -12,7 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
  *
  * @package Gzero\EloquentTree\Model
  */
-class Tree extends \Illuminate\Database\Eloquent\Model {
+abstract class Tree extends \Illuminate\Database\Eloquent\Model {
 
     /**
      * Parent object
@@ -341,6 +340,41 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * You must set $fillable attribute to use this function
+     *
+     * @param array $map Nodes recursive array
+     */
+    public static function mapArray(Array $map)
+    {
+        foreach ($map as $item) {
+            $root = new static($item);
+            $root->setAsRoot();
+            if (isset($item['children'])) {
+                static::mapDescendantsArray($root, $item['children']);
+            }
+        }
+
+    }
+
+    /**
+     * You must set $fillable attribute to use this function
+     *
+     * @param Tree  $parent Parent node
+     * @param array $map    Nodes recursive array
+     */
+    public static function mapDescendantsArray(Tree $parent, Array $map)
+    {
+        foreach ($map as $item) {
+            $node = new static($item);
+            $node->setChildOf($parent);
+            if (isset($item['children'])) {
+                static::mapDescendantsArray($node, $item['children']);
+            }
+        }
+
+    }
+
+    /**
      * Get tree column for actual model
      *
      * @param string $name column name [path|parent|level]
@@ -362,7 +396,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     public static function getRoots()
     {
-        return static::where(static::getTreeColumn('parent'), 'IS', DB::raw('NULL'));
+        return static::whereNull(static::getTreeColumn('parent'));
     }
 
 
