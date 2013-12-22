@@ -1,13 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: dmn
- * Date: 17.12.13
- * Time: 11:26
- */
-require_once 'Model/Tree.php'; // Test model
+require_once 'Model/Tree.php';
 
-class Test extends \Illuminate\Foundation\Testing\TestCase {
+class Test extends Orchestra\Testbench\TestCase {
 
     /**
      * Default preparation for each test
@@ -15,8 +9,14 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
     public function setUp()
     {
         parent::setUp();
-
-        $this->prepareForTests();
+        $artisan = $this->app->make('artisan');
+        $artisan->call(
+            'migrate',
+            array(
+                '--database' => 'testbench',
+                '--path'     => 'migrations',
+            )
+        );
     }
 
     public function tearDown()
@@ -25,27 +25,6 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         Tree::__resetBootedStaticProperty();
     }
 
-    /**
-     * Creates the application.
-     *
-     * @return Symfony\Component\HttpKernel\HttpKernelInterface
-     */
-    public function createApplication()
-    {
-        $unitTesting = TRUE;
-
-        $testEnvironment = 'testing';
-
-        return require __DIR__ . '/../../../../bootstrap/start.php';
-    }
-
-    /**
-     * Migrate the database
-     */
-    private function prepareForTests()
-    {
-        Artisan::call('migrate', array('--bench' => 'gzero/eloquent-tree'));
-    }
 
     /**
      * New node saved as root
@@ -248,6 +227,29 @@ class Test extends \Illuminate\Foundation\Testing\TestCase {
         $this->assertEquals(7, Tree::find(1)->findDescendants()->count(), 'Expected numer of Descendants');
         $this->assertEquals(2, Tree::find(1)->findChildren()->count(), 'Expected numer of Children');
         $this->assertEquals(4, Tree::find(5)->findAncestors()->count(), 'Expected numer of Ancestors'); // Most nested
+    }
+
+    /**
+     * Define environment setup.
+     *
+     * @param  Illuminate\Foundation\Application $app
+     *
+     * @return void
+     */
+    protected function getEnvironmentSetUp($app)
+    {
+        // reset base path to point to our package's src directory
+        $app['path.base'] = __DIR__ . '/../src';
+
+        $app['config']->set('database.default', 'testbench');
+        $app['config']->set(
+            'database.connections.testbench',
+            array(
+                'driver'   => 'sqlite',
+                'database' => ':memory:',
+                'prefix'   => '',
+            )
+        );
     }
 
     /**
