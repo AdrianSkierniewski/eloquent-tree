@@ -2,7 +2,10 @@
 
 
 use DB;
+use Gzero\EloquentTree\Model\Exception\SelfConnectionExc;
+use Gzero\EloquentTree\Model\Exception\SelfConnectionException;
 use Illuminate\Database\Eloquent\Collection;
+
 
 /**
  * Class Tree
@@ -44,7 +47,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         $this->_handleNewNodes();
         if (!$this->isRoot()) { // Only if it is not already root
             $oldDescendants                         = $this->_getOldDescendants();
-            $this->{$this->getTreeColumn('path')}   = $this->{$this->getKeyName()} . '/';
+            $this->{$this->getTreeColumn('path')}   = $this->getKey() . '/';
             $this->{$this->getTreeColumn('parent')} = NULL;
             $this->{$this->getTreeColumn('level')}  = 0;
             $this->save();
@@ -63,10 +66,10 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     public function setChildOf(Tree $parent)
     {
         $this->_handleNewNodes();
-        if ($parent->{$this->getTreeColumn('path')} != $this->_removeLastNodeFromPath()) { // Only if new parent
+        if ($this->validateSetChildOf($parent)) {
             $oldDescendants                         = $this->_getOldDescendants();
             $this->{$this->getTreeColumn('path')}   = $this->_generateNewPath($parent);
-            $this->{$this->getTreeColumn('parent')} = $parent->{$this->getKeyName()};
+            $this->{$this->getTreeColumn('parent')} = $parent->getKey();
             $this->{$this->getTreeColumn('level')}  = $parent->{$this->getTreeColumn('level')} + 1;
             $this->save();
             $this->_updateDescendants($this, $oldDescendants);
@@ -75,24 +78,58 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Validate if parent change and prevent self connection
+     *
+     * @param Tree $parent New parent node
+     *
+     * @return bool
+     * @throws Exception\SelfConnectionException
+     */
+    public function validateSetChildOf(Tree $parent)
+    {
+        if ($parent->getKey() == $this->getKey()) {
+            throw new SelfConnectionException();
+        }
+        if ($parent->{$this->getTreeColumn('path')} != $this->_removeLastNodeFromPath()) { // Only if new parent
+            return TRUE;
+        }
+        return FALSE;
+    }
+
+    /**
      * Set node as sibling of $sibling node
      *
-     * @param Tree $sibling
+     * @param Tree $sibling New sibling node
      *
      * @return $this
      */
     public function setSiblingOf(Tree $sibling)
     {
         $this->_handleNewNodes();
-        if ($sibling->_removeLastNodeFromPath() != $this->_removeLastNodeFromPath()) { // Only if new parent
+        if ($this->validateSetSiblingOf($sibling)) {
             $oldDescendants                         = $this->_getOldDescendants();
-            $this->{$this->getTreeColumn('path')}   = $sibling->_removeLastNodeFromPath() . $this->{$this->getKeyName()} . '/';
+            $this->{$this->getTreeColumn('path')}   = $sibling->_removeLastNodeFromPath() . $this->getKey() . '/';
             $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
             $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
             $this->save();
             $this->_updateDescendants($this, $oldDescendants);
         }
         return $this;
+    }
+
+    /**
+     * Validate if parent change and prevent self connection
+     *
+     * @param Tree $sibling New sibling node
+     *
+     * @return bool
+     */
+    public function validateSetSiblingOf(Tree $sibling)
+    {
+        if ($sibling->_removeLastNodeFromPath() != $this->_removeLastNodeFromPath()) { // Only if new parent and != self
+            return TRUE;
+        }
+        return FALSE;
     }
 
     /**
@@ -112,7 +149,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     public function isLeaf()
     {
-        return (bool) static::where($this->getTreeColumn('parent'), '=', $this->{$this->getKeyName()})->count();
+        return (bool) static::where($this->getTreeColumn('parent'), '=', $this->getKey())->count();
     }
 
     /**
@@ -195,7 +232,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         $refs  = array(); // Reference table to store records in the construction of the tree
         foreach ($nodes as &$node) {
             /* @var Tree $node */
-            $refs[$node->{$node->getKeyName()}] = & $node; // Adding to ref table (we identify after the id)
+            $refs[$node->getKey()] = & $node; // Adding to ref table (we identify after the id)
             if ($count === 0) { // We use this condition as a factor in building subtrees, root node is always 1
                 $root = & $node;
                 $count++;
@@ -213,6 +250,40 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
             }
         }
         return (!isset($root)) ? FALSE : $root;
+    }
+
+    /**
+     * Displays a tree as html
+     * Rendering function accept {sub-tree} tag, represents next tree level
+     *
+     * EXAMPLE:
+     * $root->render(
+     *    'ul',
+     *    function ($node) {
+     *       return '<li>' . $node->title . '{sub-tree}</li>';
+     *   },
+     *   TRUE
+     * );
+     *
+     * @param string   $tag         HTML tag for level section
+     * @param callable $render      Rendering function
+     * @param bool     $displayRoot Is the root will be displayed
+     *
+     * @return string
+     */
+    public function render($tag, Callable $render, $displayRoot = TRUE)
+    {
+        $out = '';
+        if ($displayRoot) {
+            $out .= '<' . $tag . ' class="tree tree-level-' . $this->{$this->getTreeColumn('level')} . '">';
+            $root      = $render($this);
+            $nextLevel = $this->_renderRecursiveTree($this, $tag, $render);
+            $out .= preg_replace('/{sub-tree}/', $nextLevel, $root);
+            $out .= '</' . $tag . '>';
+        } else {
+            $out = $this->_renderRecursiveTree($this, $tag, $render);
+        }
+        return $out;
     }
 
     /**
@@ -344,7 +415,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     protected function _generateNewPath(Tree $parent)
     {
-        return $parent->{$this->getTreeColumn('path')} . $this->{$this->getKeyName()} . '/';
+        return $parent->{$this->getTreeColumn('path')} . $this->getKey() . '/';
     }
 
     /**
@@ -372,6 +443,22 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
         return $collection;
     }
 
+    protected function _renderRecursiveTree($node, $tag, Callable $render)
+    {
+        $out = '';
+        $out .= '<' . $tag . ' class="tree tree-level-' . ($node->{$node->getTreeColumn('level')} + 1) . '">';
+        foreach ($node->children as $child) {
+            if (!empty($child->children)) {
+                $level     = $render($child);
+                $nextLevel = $this->_renderRecursiveTree($child, $tag, $render);
+                $out .= preg_replace('/{sub-tree}/', $nextLevel, $level);
+            } else {
+                $out .= preg_replace('/{sub-tree}/', '', $render($child));
+            }
+        }
+        return $out . '</' . $tag . '>';
+    }
+
     /**
      * Recursive node updating
      *
@@ -391,7 +478,7 @@ class Tree extends \Illuminate\Database\Eloquent\Model {
                     $refs[$child->getKey()]->level = $refs[$parent_id]->level + 1; // New level
                     $refs[$child->getKey()]->path  = $refs[$parent_id]->path . $child->getKey() . '/'; // New path
                     DB::table($this->getTable())
-                        ->where($this->getKeyName(), '=', $child->getKey())
+                        ->where($child->getKeyName(), '=', $child->getKey())
                         ->update(
                             array(
                                 'level' => $refs[$child->getKey()]->level,
