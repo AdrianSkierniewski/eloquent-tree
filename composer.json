@@ -1,16 +1,19 @@
 {
     "name": "gzero/eloquent-tree",
-    "description": "",
+    "description": "Eloquent Tree is a tree model for Laravel Eloquent ORM.",
+    "keywords": ["laravel"],
+    "license": "MIT",
     "authors": [
         {
             "name": "Adrian Skierniewski",
-            "email": "adrian.skierniewski@gmail.com"
+            "email": "adrian.skierniewski@gmail.com",
+            "homepage": "https://github.com/AdrianSkierniewski"
         }
     ],
     "require": {
         "php": ">=5.3.0"
     },
-    "require-dev":{
+    "require-dev": {
         "orchestra/testbench": "2.1.*"
     },
     "autoload": {
