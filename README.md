@@ -1,4 +1,4 @@
-eloquent-tree [![Build Status](https://travis-ci.org/AdrianSkierniewski/eloquent-tree.png)](https://travis-ci.org/AdrianSkierniewski/eloquent-tree)
+eloquent-tree [![Latest Stable Version](https://poser.pugx.org/gzero/eloquent-tree/v/stable.png)](https://packagist.org/packages/gzero/eloquent-tree) [![Total Downloads](https://poser.pugx.org/gzero/eloquent-tree/downloads.png)](https://packagist.org/packages/gzero/eloquent-tree) [![Build Status](https://travis-ci.org/AdrianSkierniewski/eloquent-tree.png)](https://travis-ci.org/AdrianSkierniewski/eloquent-tree)
 =============
 
 Eloquent Tree is a tree model for Laravel Eloquent ORM.
