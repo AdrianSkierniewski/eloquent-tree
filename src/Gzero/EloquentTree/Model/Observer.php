@@ -2,6 +2,12 @@
 
 use DB;
 
+/**
+ * Class Observer
+ *
+ * @author  Adrian Skierniewski <adrian.skierniewski@gmail.com>
+ * @package Gzero\EloquentTree\Model
+ */
 class Observer {
 
     /**

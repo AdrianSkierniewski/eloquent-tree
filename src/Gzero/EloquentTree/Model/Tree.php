@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Collection;
 /**
  * Class Tree
  *
+ * This class represents abstract tree model for inheritance
+ *
+ * @author  Adrian Skierniewski <adrian.skierniewski@gmail.com>
  * @package Gzero\EloquentTree\Model
  */
 abstract class Tree extends \Illuminate\Database\Eloquent\Model {
@@ -19,12 +22,14 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
      * @var static
      */
     protected $_parent;
+
     /**
      * Collection for children elements
      *
      * @var \Illuminate\Database\Eloquent\Collection
      */
     public $children;
+
     /**
      * Database mapping tree fields
      *
@@ -285,45 +290,13 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
         return $out;
     }
 
-    /**
-     * Displays a tree as html list
-     *
-     * @param string $field node property to display
-     * @param Tree   $node  Optional from node
-     *
-     * @return string
-     */
-    public function renderTree($field, Tree $node = NULL)
-    {
-        $output = '';
-        if (!$node) {
-            $node = $this;
-            $output .= '<ul class="level-' . $node->level . '">';
-            $output .= '<li>';
-            $output .= '<span>' . $node->{$field} . '</span>';
-            $end = '</li></ul>';
-        }
-        if (count($node->children)) {
-            $output .= '<ul class="level-' . ($node->level + 1) . '">';
-            foreach ($node->children as $child) {
-                $output .= '<li>';
-                $output .= '<span>' . $child->{$field} . '</span>';
-                $output .= $this->renderTree($field, $child);
-            }
-            $output .= '</ul>';
-        } else {
-            $output .= '</li>';
-        }
-        if (isset($end)) {
-            $output .= $end;
-        }
-        return $output;
-    }
-
     //---------------------------------------------------------------------------------------------------------------
     // START                                 STATIC
     //---------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Adds observer inheritance
+     */
     protected static function boot()
     {
         parent::boot();
@@ -340,7 +313,17 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Map array to tree structure in database
      * You must set $fillable attribute to use this function
+     *
+     * Example array:
+     * array(
+     *       'title'    => 'root',
+     *       'children' => array(
+     *                   array('title' => 'node1'),
+     *                   array('title' => 'node2')
+     *        )
+     * );
      *
      * @param array $map Nodes recursive array
      */
@@ -352,11 +335,19 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
             if (isset($item['children'])) {
                 static::mapDescendantsArray($root, $item['children']);
             }
+            array(
+                'title'    => 'root',
+                'children' => array(
+                    array('title' => 'node1'),
+                    array('title' => 'node2')
+                )
+            );
         }
 
     }
 
     /**
+     * Map array as descendants nodes in database to specific parent node
      * You must set $fillable attribute to use this function
      *
      * @param Tree  $parent Parent node
@@ -477,6 +468,15 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
         return $collection;
     }
 
+    /**
+     * Recursive render descendants
+     *
+     * @param          $node
+     * @param          $tag
+     * @param callable $render
+     *
+     * @return string
+     */
     protected function _renderRecursiveTree($node, $tag, Callable $render)
     {
         $out = '';
@@ -494,7 +494,7 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
-     * Recursive node updating
+     * Updating descendants nodes
      *
      * @param Tree       $node           Updated node
      * @param Collection $oldDescendants Old descendants collection (just before modify parent)
