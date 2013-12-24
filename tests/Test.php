@@ -133,6 +133,7 @@ class Test extends Orchestra\Testbench\TestCase {
     public function testGetAllDescendantsForNode()
     {
         extract($this->_createSampleTree());
+        $this->assertEquals(TRUE, $child1_1_1->isLeaf(), 'Node expected to be leaf');
         $this->assertEquals( // Descendants same as returned from findDescendants()
             array(
                 $child1->toArray(),
@@ -141,7 +142,6 @@ class Test extends Orchestra\Testbench\TestCase {
             ),
             $child1->findDescendants()->get()->toArray()
         );
-
     }
 
     /**

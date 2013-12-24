@@ -24,6 +24,13 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     protected $_parent;
 
     /**
+     * Is leaf
+     *
+     * @var bool
+     */
+    protected $_isLeaf;
+
+    /**
      * Collection for children elements
      *
      * @var \Illuminate\Database\Eloquent\Collection
@@ -42,6 +49,15 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     );
 
     /**
+     * @inheritdoc
+     */
+    public function __construct(array $attributes = array())
+    {
+        parent::__construct($attributes);
+        $this->_addTreeEvents(); // Adding tree events
+    }
+
+    /**
      * Set node as root node
      *
      * @return $this
@@ -50,11 +66,15 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     {
         $this->_handleNewNodes();
         if (!$this->isRoot()) { // Only if it is not already root
+            if ($this->fireModelEvent('updatingParent') === FALSE) {
+                return $this;
+            }
             $oldDescendants                         = $this->_getOldDescendants();
             $this->{$this->getTreeColumn('path')}   = $this->getKey() . '/';
             $this->{$this->getTreeColumn('parent')} = NULL;
             $this->{$this->getTreeColumn('level')}  = 0;
             $this->save();
+            $this->fireModelEvent('updatedParent', FALSE);
             $this->_updateDescendants($this, $oldDescendants);
         }
         return $this;
@@ -71,11 +91,15 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     {
         $this->_handleNewNodes();
         if ($this->validateSetChildOf($parent)) {
+            if ($this->fireModelEvent('updatingParent') === FALSE) {
+                return $this;
+            }
             $oldDescendants                         = $this->_getOldDescendants();
             $this->{$this->getTreeColumn('path')}   = $this->_generateNewPath($parent);
             $this->{$this->getTreeColumn('parent')} = $parent->getKey();
             $this->{$this->getTreeColumn('level')}  = $parent->{$this->getTreeColumn('level')} + 1;
             $this->save();
+            $this->fireModelEvent('updatedParent', FALSE);
             $this->_updateDescendants($this, $oldDescendants);
         }
         return $this;
@@ -111,11 +135,15 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     {
         $this->_handleNewNodes();
         if ($this->validateSetSiblingOf($sibling)) {
+            if ($this->fireModelEvent('updatingParent') === FALSE) {
+                return $this;
+            }
             $oldDescendants                         = $this->_getOldDescendants();
             $this->{$this->getTreeColumn('path')}   = $sibling->_removeLastNodeFromPath() . $this->getKey() . '/';
             $this->{$this->getTreeColumn('parent')} = $sibling->{$this->getTreeColumn('parent')};
             $this->{$this->getTreeColumn('level')}  = $sibling->{$this->getTreeColumn('level')};
             $this->save();
+            $this->fireModelEvent('updatedParent', FALSE);
             $this->_updateDescendants($this, $oldDescendants);
         }
         return $this;
@@ -153,7 +181,10 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
      */
     public function isLeaf()
     {
-        return (bool) static::where($this->getTreeColumn('parent'), '=', $this->getKey())->count();
+        if (!isset($this->_isLeaf)) {
+            return $this->_isLeaf = !(bool) static::where($this->getTreeColumn('parent'), '=', $this->getKey())->count();
+        }
+        return $this->_isLeaf;
     }
 
     /**
@@ -410,6 +441,23 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
     }
 
     /**
+     * Adds tree specific events
+     *
+     * @return array
+     */
+    protected function _addTreeEvents()
+    {
+        $this->observables = array_merge(
+            array(
+                'updatedParent',
+                'updatingParent',
+                'updatedDescendants'
+            ),
+            $this->observables
+        );
+    }
+
+    /**
      * Extract path to array
      *
      * @return array
@@ -522,6 +570,7 @@ abstract class Tree extends \Illuminate\Database\Eloquent\Model {
                 }
             }
         }
+        $this->fireModelEvent('updatedDescendants', FALSE);
     }
 
     //---------------------------------------------------------------------------------------------------------------
