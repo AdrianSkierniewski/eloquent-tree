@@ -12,16 +12,6 @@ class EloquentTreeServiceProvider extends ServiceProvider {
     protected $defer = FALSE;
 
     /**
-     * Bootstrap the application events.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        $this->package('gzero/eloquent-tree');
-    }
-
-    /**
      * Register the service provider.
      *
      * @return void

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @author  Adrian Skierniewski <adrian.skierniewski@gmail.com>
  * @package Gzero\EloquentTree\Model
  */
-abstract class Tree extends \Illuminate\Database\Eloquent\Model {
+abstract class Tree extends \Eloquent {
 
     /**
      * Parent object
