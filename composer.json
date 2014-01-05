@@ -1,7 +1,7 @@
 {
     "name": "gzero/eloquent-tree",
     "description": "Eloquent Tree is a tree model for Laravel Eloquent ORM.",
-    "keywords": ["laravel"],
+    "keywords": ["laravel", "eloquent"],
     "license": "MIT",
     "authors": [
         {
