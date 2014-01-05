@@ -1,13 +1,19 @@
 <?php
-require_once 'Model/Tree.php';
+spl_autoload_register( // Autoload because we're using \Eloquent alias provided by Orchestra
+    function ($class) {
+        require_once 'tests/Model/Tree.php';
+    }
+);
 
 class Test extends Orchestra\Testbench\TestCase {
+
 
     /**
      * Default preparation for each test
      */
     public function setUp()
     {
+
         parent::setUp();
         $artisan = $this->app->make('artisan');
         $artisan->call(

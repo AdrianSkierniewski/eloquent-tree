@@ -9,10 +9,11 @@
          processIsolation="false"
          stopOnFailure="false"
          syntaxCheck="false"
->
+        >
     <testsuites>
         <testsuite name="Package Test Suite">
             <directory suffix=".php">./tests/</directory>
+            <exclude>./tests/Model/Tree.php</exclude>
         </testsuite>
     </testsuites>
 </phpunit>
