@@ -17,7 +17,7 @@ class Observer {
      */
     public function saving(Tree $model)
     {
-        if (!$model->exists and !in_array('path', $model->attributesToArray())) {
+        if (!$model->exists and !in_array('path', array_keys($model->attributesToArray()), TRUE)) {
             $model->{$model->getTreeColumn('path')}   = '';
             $model->{$model->getTreeColumn('parent')} = NULL;
             $model->{$model->getTreeColumn('level')}  = 0;
