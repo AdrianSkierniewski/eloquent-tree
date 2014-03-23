@@ -321,6 +321,19 @@ abstract class Tree extends \Eloquent {
         return $out;
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function toArray(){
+        $attributes = $this->attributesToArray();
+        $children = [];
+        if($this->children){
+            $children['children'] =  $this->children->toArray();
+        }
+
+        return array_merge($attributes, $this->relationsToArray(), $children);
+    }
+
     //---------------------------------------------------------------------------------------------------------------
     // START                                 STATIC
     //---------------------------------------------------------------------------------------------------------------
