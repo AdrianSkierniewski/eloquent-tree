@@ -326,7 +326,7 @@ abstract class Tree extends \Eloquent {
      */
     public function toArray(){
         $attributes = $this->attributesToArray();
-        $children = [];
+        $children = array();
         if($this->children){
             $children['children'] =  $this->children->toArray();
         }
