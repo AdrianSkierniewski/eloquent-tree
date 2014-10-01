@@ -284,11 +284,11 @@ abstract class Tree extends \Eloquent {
                 }
             }
         }
-		if ( isset($root) ) {
-			return isset($presenter) && class_exists($presenter) ? new $presenter($root) : $root;
-		} else {
-			return FALSE;
-		}
+        if ( isset($root) ) {
+            return isset($presenter) && class_exists($presenter) ? new $presenter($root) : $root;
+        } else {
+            return FALSE;
+        }
     }
 
     /**
