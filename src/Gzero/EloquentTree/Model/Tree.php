@@ -284,7 +284,11 @@ abstract class Tree extends \Eloquent {
                 }
             }
         }
-        return (!isset($root)) ? FALSE : $root;
+		if ( isset($root) ) {
+			return isset($presenter) && class_exists($presenter) ? new $presenter($root) : $root;
+		} else {
+			return FALSE;
+		}
     }
 
     /**
@@ -509,7 +513,7 @@ abstract class Tree extends \Eloquent {
      *
      * @param Tree $child Child node
      */
-    protected function _addChildToCollection(Tree &$child)
+    protected function _addChildToCollection(&$child)
     {
         if (empty($this->children)) {
             $this->children = new Collection();
