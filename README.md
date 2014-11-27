@@ -24,11 +24,13 @@ Eloquent Tree is a tree model for Laravel Eloquent ORM.
 
 ## Installation
 
+**Version 1.0 is not compatible with 0.***
+
 Begin by installing this package through Composer. Edit your project's composer.json file to require gzero/eloquent-tree.
 ```json
 "require": {
-    "laravel/framework": "4.1.*",
-    "gzero/eloquent-tree": "v0.4"
+    "laravel/framework": "4.2.*",
+    "gzero/eloquent-tree": "v1.0"
 },
 "minimum-stability" : "dev"
 ```
@@ -81,8 +83,8 @@ $leaf->findRoot();
 
 Children - returning flat collection of children.  You can use Eloquent query builder.
 ```php
-$collection = $root->findChildren()->get();
-$collection2 = $root->findChildren()->where('url', '=', 'slug')->get();
+$collection = $root->children()->get();
+$collection2 = $root->children()->where('url', '=', 'slug')->get();
 ```
 Ancestors - returning flat collection of ancestors, first is root, last is current node. You can use Eloquent query builder.
             Of course there are no guarantees that the structure of the tree would be complete if you do the query with additional where
