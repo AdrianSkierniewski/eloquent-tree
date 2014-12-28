@@ -3,7 +3,7 @@
 
 use DB;
 use Gzero\EloquentTree\Model\Exception\SelfConnectionException;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 
 
 /**
