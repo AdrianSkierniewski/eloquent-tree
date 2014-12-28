@@ -3,7 +3,7 @@
 
 use DB;
 use Gzero\EloquentTree\Model\Exception\SelfConnectionException;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 
 
 /**
@@ -216,8 +216,8 @@ abstract class Tree extends \Eloquent {
     /**
      * Rebuilds sub-tree for this node
      *
-     * @param \Illuminate\Database\Eloquent\Collection $nodes     Nodes from which we are build tree
-     * @param string                                   $presenter Optional presenter class
+     * @param Collection $nodes     Nodes from which we are build tree
+     * @param string     $presenter Optional presenter class
      *
      * @return static Root node
      */
