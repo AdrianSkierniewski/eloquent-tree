@@ -216,8 +216,8 @@ abstract class Tree extends \Eloquent {
     /**
      * Rebuilds sub-tree for this node
      *
-     * @param Collection $nodes     Nodes from which we are build tree
-     * @param string     $presenter Optional presenter class
+     * @param \Illuminate\Database\Eloquent\Collection $nodes     Nodes from which we are build tree
+     * @param string                                   $presenter Optional presenter class
      *
      * @return static Root node
      */
@@ -285,18 +285,16 @@ abstract class Tree extends \Eloquent {
         return $out;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function toArray()
-    {
-        $attributes = $this->attributesToArray();
-        $children   = [];
-        if ($this->children) {
-            $children['children'] = $this->children->toArray();
-        }
 
-        return array_merge($attributes, $this->relationsToArray(), $children);
+    /**
+     * Determine if we've already loaded the children
+     * Used to prevent lazy loading on children
+     *
+     * @return bool
+     */
+    public function isChildrenLoaded()
+    {
+        return isset($this->relations['children']);
     }
 
     //---------------------------------------------------------------------------------------------------------------
@@ -458,10 +456,11 @@ abstract class Tree extends \Eloquent {
      */
     protected function addChildToCollection(&$child)
     {
-        if (empty($this->children)) {
-            $this->children = new Collection();
+        $relations = $this->getRelations();
+        if (empty($relations['children'])) {
+            $this->setRelation('children', new Collection());
         }
-        $this->children->add($child);
+        $this->setRelation('children', $this->getRelation('children')->add($child));
     }
 
     /**
