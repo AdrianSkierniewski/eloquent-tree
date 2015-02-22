@@ -232,6 +232,7 @@ abstract class Tree extends \Eloquent {
      * @param \Illuminate\Database\Eloquent\Collection $nodes Nodes from which we are build tree
      *
      * @return static Root node
+     * @throws MissingParentException
      */
     public function buildTree(Collection $nodes)
     {
