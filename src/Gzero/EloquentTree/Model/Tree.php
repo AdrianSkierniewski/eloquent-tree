@@ -229,12 +229,13 @@ abstract class Tree extends \Eloquent {
     /**
      * Rebuilds trees from passed nodes
      *
-     * @param \Illuminate\Database\Eloquent\Collection $nodes Nodes from which we are build tree
+     * @param Collection $nodes  Nodes from which we are build tree
+     * @param bool       $strict If we want to make sure that there are no orphan nodes
      *
      * @return static Root node
      * @throws MissingParentException
      */
-    public function buildTree(Collection $nodes)
+    public function buildTree(Collection $nodes, $strict = true)
     {
         $refs  = []; // Reference table to store records in the construction of the tree
         $count = 0;
@@ -254,7 +255,9 @@ abstract class Tree extends \Eloquent {
                     if (!empty($refs[$index])) { // We should already have parent for our node added to refs array
                         $refs[$index]->addChildToCollection($node);
                     } else {
-                        throw new MissingParentException();
+                        if ($strict) { // We don't want to ignore orphan nodes
+                            throw new MissingParentException();
+                        }
                     }
                 }
             }
