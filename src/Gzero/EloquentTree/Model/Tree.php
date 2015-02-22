@@ -239,6 +239,7 @@ abstract class Tree extends \Eloquent {
         $roots = new Collection();
         foreach ($nodes as &$node) {
             /* @var Tree $node */
+            $node->initChildrenRelation(); // We need to init relation to avoid LAZY LOADING in future
             $refs[$node->getKey()] = &$node; // Adding to ref table (we identify after the id)
             if ($count === 0) {
                 $roots->add($node);
@@ -469,10 +470,6 @@ abstract class Tree extends \Eloquent {
      */
     protected function addChildToCollection(&$child)
     {
-        $relations = $this->getRelations();
-        if (empty($relations['children'])) {
-            $this->setRelation('children', new Collection());
-        }
         $this->setRelation('children', $this->getRelation('children')->add($child));
     }
 
@@ -560,6 +557,17 @@ abstract class Tree extends \Eloquent {
                 return $node->isSibling($item);
             }
         )->first();
+    }
+
+    /**
+     * Init children relation to avoid empty LAZY LOADING
+     */
+    protected function initChildrenRelation()
+    {
+        $relations = $this->getRelations();
+        if (empty($relations['children'])) {
+            $this->setRelation('children', new Collection());
+        }
     }
 
     //---------------------------------------------------------------------------------------------------------------
