@@ -214,38 +214,33 @@ abstract class Tree extends \Eloquent {
     }
 
     /**
-     * Rebuilds sub-tree for this node
+     * Rebuilds trees from passed nodes
      *
-     * @param \Illuminate\Database\Eloquent\Collection $nodes     Nodes from which we are build tree
-     * @param string                                   $presenter Optional presenter class
+     * @param \Illuminate\Database\Eloquent\Collection $nodes Nodes from which we are build tree
      *
      * @return static Root node
      */
-    public function buildTree(Collection $nodes, $presenter = '')
+    public function buildTree(Collection $nodes)
     {
-        $count = 0;
         $refs  = []; // Reference table to store records in the construction of the tree
+        $roots = new Collection();
         foreach ($nodes as &$node) {
             /* @var Tree $node */
             $refs[$node->getKey()] = &$node; // Adding to ref table (we identify after the id)
-            if ($count === 0) { // We use this condition as a factor in building subtrees, root node is always 1
-                $root = &$node;
-                $count++;
+            $index                 = $node->{$this->getTreeColumn('parent')};
+            if (empty($index)) { // We use this condition as a factor in building subtrees, root node is always 1
+                $roots->add($node);
             } else { // This is not a root, so add them to the parent
-                $index = $node->{$this->getTreeColumn('parent')};
-                if (empty($refs[$index]) and $index == $this->id) { // If Parent not exist but is current node
-                    $refs[$index] = &$this; // Current node is root
-                    $root         = $this;
-                }
-                if (isset($presenter) and class_exists($presenter)) {
-                    $refs[$index]->addChildToCollection(new $presenter($node));
-                } else {
-                    $refs[$index]->addChildToCollection($node);
-                }
+                $refs[$index]->addChildToCollection($node);
             }
         }
-        if (isset($root)) {
-            return isset($presenter) && class_exists($presenter) ? new $presenter($root) : $root;
+
+        if (!empty($roots)) {
+            if (count($roots) > 1) {
+                return $roots;
+            } else {
+                return $roots[0];
+            }
         } else {
             return false;
         }

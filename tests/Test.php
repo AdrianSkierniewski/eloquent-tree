@@ -1,7 +1,7 @@
 <?php
 spl_autoload_register( // Autoload because we're using \Eloquent alias provided by Orchestra
     function ($class) {
-        require_once 'tests/Model/Tree.php';
+        require_once 'Model/Tree.php';
     }
 );
 
@@ -241,6 +241,31 @@ class Test extends Orchestra\Testbench\TestCase {
     }
 
     /**
+     * Tree building on PHP side
+     *
+     * @test
+     */
+    public function can_build_complete_trees()
+    {
+        extract($this->_createAdvancedTrees());
+        $nodes = $root->orderBy('level', 'ASC')->get(); // We get all nodes
+        $treeRoots = $root->buildTree($nodes); // And we should build two trees
+        $this->assertEquals(count($treeRoots), 2, 'We shoul have exactly 2 roots');
+
+        $this->assertEquals($treeRoots[0]->children[0]->id, $child1->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[0]->children[0]->children[0]->id, $child1_1->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[0]->children[0]->children[0]->children[0]->id, $child1_1_1->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[0]->children[1]->id, $child2->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[0]->children[1]->children[1]->children[0]->id, $child2_2_1->id, 'Specific child expected');
+
+        $this->assertEquals($treeRoots[1]->children[0]->id, $child4->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[1]->children[0]->children[0]->id, $child4_1->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[1]->children[0]->children[0]->children[0]->id, $child4_1_1->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[1]->children[1]->id, $child5->id, 'Specific child expected');
+        $this->assertEquals($treeRoots[1]->children[1]->children[1]->children[0]->id, $child5_2_1->id, 'Specific child expected');
+    }
+
+    /**
      * Tree building from array
      *
      * @test
@@ -346,6 +371,39 @@ class Test extends Orchestra\Testbench\TestCase {
         $tree['child2_2_1']   = with(new Tree())->setChildOf($tree['child2_2']);
         $tree['child2_2_2']   = with(new Tree())->setChildOf($tree['child2_2']);
         $tree['child2_2_2_1'] = with(new Tree())->setChildOf($tree['child2_2_2']);
+        return $tree;
+    }
+
+    /**
+     * Helper function
+     *
+     * @return array
+     */
+    protected function _createAdvancedTrees()
+    {
+        $tree                 = [];
+        $tree['root']         = with(new Tree())->setAsRoot();
+        $tree['child1']       = with(new Tree())->setChildOf($tree['root']);
+        $tree['child2']       = with(new Tree())->setChildOf($tree['root']);
+        $tree['child3']       = with(new Tree())->setChildOf($tree['root']);
+        $tree['child1_1']     = with(new Tree())->setChildOf($tree['child1']);
+        $tree['child2_1']     = with(new Tree())->setChildOf($tree['child2']);
+        $tree['child2_2']     = with(new Tree())->setChildOf($tree['child2']);
+        $tree['child1_1_1']   = with(new Tree())->setChildOf($tree['child1_1']);
+        $tree['child2_2_1']   = with(new Tree())->setChildOf($tree['child2_2']);
+        $tree['child2_2_2']   = with(new Tree())->setChildOf($tree['child2_2']);
+        $tree['child2_2_2_1'] = with(new Tree())->setChildOf($tree['child2_2_2']);
+        $tree['root2']        = with(new Tree())->setAsRoot();
+        $tree['child4']       = with(new Tree())->setChildOf($tree['root2']);
+        $tree['child5']       = with(new Tree())->setChildOf($tree['root2']);
+        $tree['child6']       = with(new Tree())->setChildOf($tree['root']);
+        $tree['child4_1']     = with(new Tree())->setChildOf($tree['child4']);
+        $tree['child5_1']     = with(new Tree())->setChildOf($tree['child5']);
+        $tree['child5_2']     = with(new Tree())->setChildOf($tree['child5']);
+        $tree['child4_1_1']   = with(new Tree())->setChildOf($tree['child4_1']);
+        $tree['child5_2_1']   = with(new Tree())->setChildOf($tree['child5_2']);
+        $tree['child5_2_2']   = with(new Tree())->setChildOf($tree['child5_2']);
+        $tree['child5_2_2_1'] = with(new Tree())->setChildOf($tree['child5_2_2']);
         return $tree;
     }
 }
