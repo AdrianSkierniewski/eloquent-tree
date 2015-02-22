@@ -156,6 +156,18 @@ abstract class Tree extends \Eloquent {
     }
 
     /**
+     * Check if node is sibling for passed node
+     *
+     * @param Tree $node
+     *
+     * @return bool
+     */
+    public function isSibling(Tree $node)
+    {
+        return $this->{$this->getTreeColumn('parent')} === $node->{$this->getTreeColumn('parent')};
+    }
+
+    /**
      * Get parent to specific node (if exist)
      *
      * @return static
@@ -223,15 +235,21 @@ abstract class Tree extends \Eloquent {
     public function buildTree(Collection $nodes)
     {
         $refs  = []; // Reference table to store records in the construction of the tree
+        $count = 0;
         $roots = new Collection();
         foreach ($nodes as &$node) {
             /* @var Tree $node */
             $refs[$node->getKey()] = &$node; // Adding to ref table (we identify after the id)
-            $index                 = $node->{$this->getTreeColumn('parent')};
-            if (empty($index)) { // We use this condition as a factor in building subtrees, root node is always 1
+            if ($count === 0) {
                 $roots->add($node);
-            } else { // This is not a root, so add them to the parent
-                $refs[$index]->addChildToCollection($node);
+                $count++;
+            } else {
+                if ($this->siblingOfRoot($node, $roots)) { // We use this condition as a factor in building subtrees
+                    $roots->add($node);
+                } else { // This is not a root, so add them to the parent
+                    $index = $node->{$this->getTreeColumn('parent')};
+                    $refs[$index]->addChildToCollection($node);
+                }
             }
         }
 
@@ -525,6 +543,23 @@ abstract class Tree extends \Eloquent {
             }
         }
         $this->fireModelEvent('updatedDescendants', false);
+    }
+
+    /**
+     * Check if node is sibling for roots in collection
+     *
+     * @param Tree       $node  Tree node
+     * @param Collection $roots Collection of roots
+     *
+     * @return bool
+     */
+    private function siblingOfRoot(Tree $node, Collection $roots)
+    {
+        return (bool) $roots->filter(
+            function ($item) use ($node) {
+                return $node->isSibling($item);
+            }
+        )->first();
     }
 
     //---------------------------------------------------------------------------------------------------------------

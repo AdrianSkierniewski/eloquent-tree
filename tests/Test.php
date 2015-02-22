@@ -245,10 +245,24 @@ class Test extends Orchestra\Testbench\TestCase {
      *
      * @test
      */
+    public function can_build_sub_tree()
+    {
+        extract($this->_createAdvancedTree());
+        $treeRoot = $child1->buildTree($child1->findDescendants()->get());
+        $this->assertEquals($child1->id, $treeRoot->id, 'Specific child expected');
+        $this->assertEquals($treeRoot->children[0]->id, $child1_1->id, 'Specific child expected');
+        $this->assertEquals($treeRoot->children[0]->children[0]->id, $child1_1_1->id, 'Specific child expected');
+    }
+
+    /**
+     * Tree building on PHP side
+     *
+     * @test
+     */
     public function can_build_complete_trees()
     {
         extract($this->_createAdvancedTrees());
-        $nodes = $root->orderBy('level', 'ASC')->get(); // We get all nodes
+        $nodes     = $root->orderBy('level', 'ASC')->get(); // We get all nodes
         $treeRoots = $root->buildTree($nodes); // And we should build two trees
         $this->assertEquals(count($treeRoots), 2, 'We shoul have exactly 2 roots');
 
