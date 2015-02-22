@@ -2,6 +2,7 @@
 
 
 use DB;
+use Gzero\EloquentTree\Model\Exception\MissingParentException;
 use Gzero\EloquentTree\Model\Exception\SelfConnectionException;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -249,7 +250,11 @@ abstract class Tree extends \Eloquent {
                     $roots->add($node);
                 } else { // This is not a root, so add them to the parent
                     $index = $node->{$this->getTreeColumn('parent')};
-                    $refs[$index]->addChildToCollection($node);
+                    if (!empty($refs[$index])) { // We should already have parent for our node added to refs array
+                        $refs[$index]->addChildToCollection($node);
+                    } else {
+                        throw new MissingParentException();
+                    }
                 }
             }
         }
