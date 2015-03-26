@@ -267,7 +267,7 @@ abstract class Tree extends \Eloquent {
             if (count($roots) > 1) {
                 return $roots;
             } else {
-                return $roots[0];
+                return $roots->first();
             }
         } else {
             return false;

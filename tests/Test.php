@@ -280,6 +280,18 @@ class Test extends Orchestra\Testbench\TestCase {
     }
 
     /**
+     * Tree building on PHP side
+     *
+     * @test
+     */
+    public function it_returns_null_if_cant_build_tree()
+    {
+        extract($this->_createSampleTree());
+        $treeRoots = $root->buildTree(new \Illuminate\Database\Eloquent\Collection()); // Empty collection, so we can't build tree
+        $this->assertNull($treeRoots);
+    }
+
+    /**
      * Tree building from array
      *
      * @test
