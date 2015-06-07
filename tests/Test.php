@@ -15,8 +15,7 @@ class Test extends Orchestra\Testbench\TestCase {
     {
 
         parent::setUp();
-        $artisan = $this->app->make('artisan');
-        $artisan->call(
+        $this->artisan(
             'migrate',
             [
                 '--database' => 'testbench',

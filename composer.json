@@ -14,7 +14,7 @@
         "php": ">=5.4.0"
     },
     "require-dev": {
-        "orchestra/testbench": "2.2.*",
+        "orchestra/testbench": "3.0.*",
         "phpunit/phpunit": "4.3.*"
     },
     "autoload": {
@@ -25,5 +25,5 @@
             "Gzero\\EloquentTree\\": "src/"
         }
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "stable"
 }
