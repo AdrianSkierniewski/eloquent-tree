@@ -25,7 +25,8 @@ Eloquent Tree is a tree model for Laravel Eloquent ORM.
 ## Installation
 
 **Version 1.0 is not compatible with 0.***
-**Version 2.0 - Laravel 5 support***
+
+**Version 2.0 - Laravel 5 support**
 
 Begin by installing this package through Composer. Edit your project's composer.json file to require gzero/eloquent-tree.
 ```json
