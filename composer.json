@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "php": ">=5.5.0"
+        "php": ">=5.5.9"
     },
     "require-dev": {
         "orchestra/testbench": "3.1.*",
