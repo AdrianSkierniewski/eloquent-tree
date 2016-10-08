@@ -19,7 +19,7 @@
     },
     "autoload": {
         "classmap": [
-            "src/migrations"
+            "tests/migrations"
         ],
         "psr-0": {
             "Gzero\\EloquentTree\\": "src/"
