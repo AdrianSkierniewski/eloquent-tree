@@ -30,13 +30,15 @@ Eloquent Tree is a tree model for Laravel Eloquent ORM.
 
 **Version 2.1 - Laravel 5.1 support**
 
+**Version 3.0 - Laravel 5.3 support**
+
 Begin by installing this package through Composer. Edit your project's composer.json file to require gzero/eloquent-tree.
 ```json
 "require": {
-    "laravel/framework": "4.2.*",
-    "gzero/eloquent-tree": "v2.0"
+    "laravel/framework": "5.3.*",
+    "gzero/eloquent-tree": "v3.0"
 },
-"minimum-stability" : "dev"
+"minimum-stability" : "stable"
 ```
 Next, update Composer from the Terminal:
 ```
@@ -45,7 +47,7 @@ composer update
 That's all now you can extend \Gzero\EloquentTree\Model\Tree in your project
 
 ## Migration
-Simply migration with all required columns
+Simply migration with all required columns that you could extend by adding new fields
 ```php
 Schema::create(
     'trees',
@@ -80,12 +82,12 @@ $sibling->setSiblingOf($child); // New sibling
 
 ### Getting tree nodes
 
-Root - returning root node
+Leaf - returning root node
 ```php
 $leaf->findRoot();
 ```
 
-Children - returning flat collection of children.  You can use Eloquent query builder.
+Children - returning flat collection of children. You can use Eloquent query builder.
 ```php
 $collection = $root->children()->get();
 $collection2 = $root->children()->where('url', '=', 'slug')->get();

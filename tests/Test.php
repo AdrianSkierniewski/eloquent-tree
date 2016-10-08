@@ -15,11 +15,10 @@ class Test extends Orchestra\Testbench\TestCase {
     {
 
         parent::setUp();
-        $this->artisan(
-            'migrate',
+        $this->loadMigrationsFrom(
             [
                 '--database' => 'testbench',
-                '--path'     => 'migrations',
+                '--realpath' => realpath(__DIR__ . '/migrations'),
             ]
         );
     }
@@ -70,7 +69,7 @@ class Test extends Orchestra\Testbench\TestCase {
         $this->assertEquals($root->path . $child->id . '/', $child->path, 'Wrong children path!');
         $this->assertEquals($root->level + 1, $child->level, 'Wrong children level!');
         $this->assertEquals($root->id, $child->parent_id, 'Wrong children parent!');
-        $this->assertEquals($root, $child->parent, 'Wrong children parent!');
+        $this->assertEquals($root->path, $child->parent->path, 'Wrong children parent!');
     }
 
     /**
