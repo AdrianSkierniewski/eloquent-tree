@@ -36,7 +36,7 @@ Begin by installing this package through Composer. Edit your project's composer.
 ```json
 "require": {
     "laravel/framework": "5.3.*",
-    "gzero/eloquent-tree": "v3.0"
+    "gzero/eloquent-tree": "v3.0.*"
 },
 "minimum-stability" : "stable"
 ```
