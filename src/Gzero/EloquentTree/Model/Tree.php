@@ -5,6 +5,7 @@ use DB;
 use Gzero\EloquentTree\Model\Exception\MissingParentException;
 use Gzero\EloquentTree\Model\Exception\SelfConnectionException;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model as Eloquent;
 
 
 /**
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @author  Adrian Skierniewski <adrian.skierniewski@gmail.com>
  * @package Gzero\EloquentTree\Model
  */
-abstract class Tree extends \Eloquent {
+abstract class Tree extends Eloquent {
 
     /**
      * Database tree fields
