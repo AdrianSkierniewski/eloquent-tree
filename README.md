@@ -67,6 +67,7 @@ Schema::create(
 
 - [Inserting and Updating new nodes](#inserting-and-updating-new-nodes)
 - [Getting tree nodes](#getting-tree-nodes)
+- [Finding Leaf nodes](#getting-leaf-nodes)
 - [Map from array](#map-from-array)
 - [Rendering tree](#rendering-tree)
 
@@ -109,6 +110,11 @@ $collection2 = $node->findDescendants()->where('url', '=', 'slug')->get();
 Building tree structure on PHP side - if some nodes will be missing, these branches will not be built
 ```php
 $treeRoot = $root->buildTree($root->findDescendants()->get())
+```
+
+### Getting leaf nodes
+```php
+Tree::getLeafs();
 ```
 
 ### Map from array
