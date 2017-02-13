@@ -348,7 +348,7 @@ abstract class Tree extends \Eloquent {
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public static function getLeafs()
+    public static function getLeaves()
     {
         $parents  = static::select('parent_id')->whereNotNull('parent_id')->distinct()->get()->pluck('parent_id')->all();
         return static::wherenotin('id',$parents);
