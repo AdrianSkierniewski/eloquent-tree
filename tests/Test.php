@@ -336,6 +336,26 @@ class Test extends Orchestra\Testbench\TestCase {
         $this->assertEquals(4, Tree::find(5)->findAncestors()->count(), 'Expected numer of Ancestors'); // Most nested
     }
 
+     /**
+     * Tree building on PHP side
+     *
+     * @test
+     */
+     public function get_leaf_nodes()
+	{
+	        extract($this->_createSampleTree());
+		$correct = [
+			$child2,
+			$child3,
+			$child1_1_1
+		];
+		foreach($root->getLeaves()->get() as $key=>$node )
+		{
+			$this->assertEquals($correct[$key]->toArray(),$node->toArray());
+		}
+	}
+
+
     /**
      * Define environment setup.
      *
