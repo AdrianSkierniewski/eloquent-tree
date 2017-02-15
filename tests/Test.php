@@ -336,6 +336,41 @@ class Test extends Orchestra\Testbench\TestCase {
         $this->assertEquals(4, Tree::find(5)->findAncestors()->count(), 'Expected numer of Ancestors'); // Most nested
     }
 
+     /**
+     * getting leaf nodes
+     *
+     * @test
+     */
+     public function get_leaf_nodes()
+	{
+	        extract($this->_createSampleTree());
+		$correct = [
+			$child2,
+			$child3,
+			$child1_1_1
+		];
+		foreach($root->getLeaves()->get() as $key=>$node )
+		{
+			$this->assertEquals($correct[$key]->toArray(),$node->toArray());
+		}
+	}
+
+
+    /**
+     * getting leaf nodes if the tree is only one node(root)
+     *
+     * @test
+     */
+     public function get_leaf_nodes_root_only()
+        {
+		$root= with(new Tree())->setAsRoot();
+		$correct = [
+			$root->toArray()		
+		];
+		$this->assertEquals($correct,$root->getLeaves()->get()->toArray());
+	}
+
+
     /**
      * Define environment setup.
      *
