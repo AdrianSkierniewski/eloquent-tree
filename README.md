@@ -114,7 +114,7 @@ $treeRoot = $root->buildTree($root->findDescendants()->get())
 
 ### Getting leaf nodes
 ```php
-Tree::getLeafs();
+Tree::getLeaves();
 ```
 
 ### Map from array
