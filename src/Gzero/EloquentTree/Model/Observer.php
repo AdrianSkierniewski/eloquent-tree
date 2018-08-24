@@ -33,7 +33,7 @@ class Observer {
     {
         if ($model->{$model->getTreeColumn('path')} === '') { // If we just save() new node
             $model->{$model->getTreeColumn('path')} = $model->getKey() . '/';
-            DB::table($model->getTable())
+            DB::connection($model->getConnectionName())->table($model->getTable())
                 ->where($model->getKeyName(), '=', $model->getKey())
                 ->update(
                     array(
