@@ -7,12 +7,12 @@
   "increment": "patch",
   "prereleaseId": null,
   "commitMessage": "Release %s",
-  "tagName": "v%s",
   "tagAnnotation": "Release %s",
   "buildCommand": false,
   "changelogCommand": "git log --pretty=format:'* %s (%h)' `git describe --tags --abbrev=0`..HEAD",
   "requireCleanWorkingDir": false,
   "src": {
+    "tagName": "v%s",
     "pushRepo": null,
     "beforeStartCommand": false,
     "beforeStageCommand": false,
@@ -22,7 +22,7 @@
     "publish": false,
     "publishPath": ".",
     "tag": "latest",
-    "private": false,
+    "private": true,
     "forcePublishSourceRepo": false
   },
   "github": {
